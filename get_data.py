@@ -3,25 +3,29 @@
 # For a given timerange and location it downloads the data from the webpage, 
 # gets the desired weather data and stores it in a directory
 
-# The stored data is both the downloaded page and the scraped data (all_data.json)
+# The stored data is both the downloaded page and the scraped data (all_data + timestamp.json)
 
 from bs4 import BeautifulSoup
 from selenium.webdriver.chrome.options import Options
 from selenium import webdriver
 from datetime import timedelta, date
+from pathlib import Path
 import time
 import random
 import json
 import sys
 import os
-from pathlib import Path
+import csv
 
-start = date(2018, 1, 1) # put your favourite date here
-end = date(2019, 2, 1) # and another here
+start = date(2019, 1, 1) # put your favourite date here
+end = date(2019, 1, 4) # and another here
 
 days = int((end - start).days)
 
 all_data = []
+just_data = []
+just_names = []
+just_units = []
 
 # Wrocław is fixed here
 url = r"https://www.wunderground.com/history/daily/pl/wroc%C5%82aw/EPWR/date/"
@@ -97,6 +101,13 @@ for i in range(days):
             # print(len(data))
 
             all_data += [(names, units, data)]
+
+            if just_names == []:
+                just_names = names
+            if just_units == []:
+                just_units = units
+            just_data += data
+
             break
 
         except IndexError as e:
@@ -114,6 +125,25 @@ for i in range(days):
 
     # save after each webpage? probably makes sense if we download a lot and something might crash
 
-    j = json.dumps(all_data)
-    with open("2019/all_data.json", 'w+') as file:
+    if not os.path.exists("scraped"):
+        os.makedirs("scraped")
+
+    j = json.dumps(just_data)
+    with open("scraped/tmp_all_data.json", 'w+') as file:
         print(j, file=file)
+
+t = str(time.time())
+dot = t.find('.')
+t = t[:dot]
+with open("scraped/all_data" + t + ".json", 'w+') as file:
+    print(j, file=file)
+
+with open("scraped/all_data" + t + ".csv", 'w+') as file:
+    nu = [i + "|" + j for (i,j) in zip(just_names, just_units)]
+
+    writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+    writer.writerow(nu)
+
+    for d in just_data:
+        writer.writerow(d)
