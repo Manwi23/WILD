@@ -17,8 +17,8 @@ import sys
 import os
 import csv
 
-start = date(2019, 1, 1) # put your favourite date here
-end = date(2019, 1, 4) # and another here
+start = date(2018, 1, 1) # put your favourite date here
+end = date(2018, 2, 1) # and another here
 
 days = int((end - start).days)
 
@@ -27,8 +27,14 @@ just_data = []
 just_names = []
 just_units = []
 
+sleeping_time = 1
+
 # Wrocław is fixed here
 url = r"https://www.wunderground.com/history/daily/pl/wroc%C5%82aw/EPWR/date/"
+
+chrome_options = Options()  
+chrome_options.add_argument("--headless") # Opens the browser up in background
+
 
 for i in range(days):
     cur = start + timedelta(days=i)
@@ -51,9 +57,6 @@ for i in range(days):
                 with open(my_file) as mf:
                     page = mf.read()
             else:
-                chrome_options = Options()  
-                chrome_options.add_argument("--headless") # Opens the browser up in background
-
                 with webdriver.Chrome('./chromedriver_linux64/chromedriver', options=chrome_options) as browser:
                     browser.get(cur_url)
                     page = browser.page_source
@@ -108,15 +111,18 @@ for i in range(days):
                 just_units = units
             just_data += data
 
+            sleeping_time = 1
+
             break
 
         except IndexError as e:
             # it happens when the page didn't load for some reason
 
-            t = random.random() * 10
+            t = sleeping_time + random.random()
             print("failed, sleeping for", t)
             sys.stdout.flush()
             time.sleep(t)
+            sleeping_time = 2*t
             pass
 
     with open(filename, 'w+') as file:
