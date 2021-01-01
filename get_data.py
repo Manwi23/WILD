@@ -11,145 +11,141 @@ from selenium import webdriver
 from datetime import timedelta, date
 from pathlib import Path
 import time
+from time import sleep
 import random
 import json
 import sys
 import os
 import csv
+from get_places import get_city_address
 
-start = date(2018, 1, 1) # put your favourite date here
-end = date(2018, 2, 1) # and another here
+def scrape_date_range(name, start=date(2018, 1, 1), end=date(2018, 1, 30), chromedriver='./chromedriver'):
 
-days = int((end - start).days)
+    url = get_city_address(name, headless=True, wait_for_page=5, chromedriver=chromedriver)
+    print(url)
 
-all_data = []
-just_data = []
-just_names = []
-just_units = []
+    days = int((end - start).days)
 
-sleeping_time = 1
+    all_data = []
+    just_data = []
+    just_names = []
+    just_units = []
 
-# Wrocław is fixed here
-url = r"https://www.wunderground.com/history/daily/pl/wroc%C5%82aw/EPWR/date/"
+    sleeping_time = 1
 
-chrome_options = Options()  
-chrome_options.add_argument("--headless") # Opens the browser up in background
+    # # Wrocław is fixed here
+    # url = r"https://www.wunderground.com/history/daily/pl/wroc%C5%82aw/EPWR/date/"
 
-
-for i in range(days):
-    cur = start + timedelta(days=i)
-    print(cur)
-
-    cur_url = url + str(cur)
-
-    filename = str(cur.year)+"/"+str(cur)
-
-    if not os.path.exists(str(cur.year)):
-        os.makedirs(str(cur.year))
-
-    while 1:
-        try:
-
-            # if the webpage was already downloaded, use it instead of downloading again
-
-            my_file = Path(filename)
-            if my_file.is_file():
-                with open(my_file) as mf:
-                    page = mf.read()
-            else:
-                with webdriver.Chrome('./chromedriver_linux64/chromedriver', options=chrome_options) as browser:
-                    browser.get(cur_url)
-                    page = browser.page_source
-
-            soup = BeautifulSoup(page, 'html.parser')
-
-            table = soup.findAll('table')
-            our_table = table[1]
-
-            thead = our_table.findAll('thead')[0]
-
-            names = ['date']
-            units = []
-            data = []
-
-            ths = thead.findAll('th')
-
-            for th in ths:
-                button = th.find('button')
-                names += [button.contents[0]]
-
-            tbody = our_table.find('tbody')
-            trs = tbody.findAll('tr')
-
-            for tr in trs:
-                d = [str(cur)]
-                u = ['']
-                for td in tr.findAll('td'):
-                    spans = td.findAll('span')
-                    if len(spans) < 2:
-                        d += spans[0].contents
-                        u += ['']
-                    else:
-                        tmp = td.find('span', {'class':"wu-value wu-value-to"})
-                        m = td.findAll('span', {'class':"ng-star-inserted"})[1]
-                        if units == []:
-                            u += [m.contents[0]]
-                        d += [tmp.contents[0]]
-                if units == []:
-                    units = u
-                data += [d]
-
-            # print(data)
-            # print(units)
-            # print(len(data))
-
-            all_data += [(names, units, data)]
-
-            if just_names == []:
-                just_names = names
-            if just_units == []:
-                just_units = units
-            just_data += data
-
-            sleeping_time = 1
-
-            break
-
-        except IndexError as e:
-            # it happens when the page didn't load for some reason
-
-            t = sleeping_time + random.random()
-            print("failed, sleeping for", t)
-            sys.stdout.flush()
-            time.sleep(t)
-            sleeping_time = 2*t
-            pass
-
-    with open(filename, 'w+') as file:
-        print(page, file=file)
+    chrome_options = Options()  
+    chrome_options.add_argument("--headless") # Opens the browser up in background
 
 
-    # save after each webpage? probably makes sense if we download a lot and something might crash
+    for i in range(days):
+        cur = start + timedelta(days=i)
+        print(cur)
 
-    if not os.path.exists("scraped"):
-        os.makedirs("scraped")
+        cur_url = url + str(cur)
+        cur_dir = "scraped/"+str(cur.year)
+        filename = cur_dir+"/"+str(cur)
 
-    j = json.dumps(just_data)
-    with open("scraped/tmp_all_data.json", 'w+') as file:
-        print(j, file=file)
+        if not os.path.exists(cur_dir):
+            os.makedirs(cur_dir)
 
-t = str(time.time())
-dot = t.find('.')
-t = t[:dot]
-with open("scraped/all_data" + t + ".json", 'w+') as file:
-    print(j, file=file)
+        while 1:
+            try:
 
-with open("scraped/all_data" + t + ".csv", 'w+') as file:
-    nu = [i + "|" + j for (i,j) in zip(just_names, just_units)]
+                # if the webpage was already downloaded, use it instead of downloading again
 
-    writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                my_file = Path(filename)
+                if my_file.is_file():
+                    with open(my_file) as mf:
+                        page = mf.read()
+                else:
+                    with webdriver.Chrome(chromedriver, options=chrome_options) as browser:
+                        browser.implicitly_wait(15)
+                        browser.get(cur_url)
+                        browser.find_element_by_tag_name("table")
+                        # sleep(5)
+                        page = browser.page_source
 
-    writer.writerow(nu)
+                soup = BeautifulSoup(page, 'html.parser')
 
-    for d in just_data:
-        writer.writerow(d)
+                table = soup.findAll('table')
+                our_table = table[1]
+
+                thead = our_table.findAll('thead')[0]
+
+                names = ['date']
+                units = []
+                data = []
+
+                ths = thead.findAll('th')
+
+                for th in ths:
+                    button = th.find('button')
+                    names += [button.contents[0]]
+
+                tbody = our_table.find('tbody')
+                trs = tbody.findAll('tr')
+
+                for tr in trs:
+                    d = [str(cur)]
+                    u = ['']
+                    for td in tr.findAll('td'):
+                        spans = td.findAll('span')
+                        if len(spans) < 2:
+                            d += spans[0].contents
+                            u += ['']
+                        else:
+                            tmp = td.find('span', {'class':"wu-value wu-value-to"})
+                            m = td.findAll('span', {'class':"ng-star-inserted"})[1]
+                            if units == []:
+                                u += [m.contents[0]]
+                            d += [tmp.contents[0]]
+                    if units == []:
+                        units = u
+                    data += [d]
+
+                # print(data)
+                # print(units)
+                # print(len(data))
+
+                all_data += [(names, units, data)]
+
+                if just_names == []:
+                    just_names = names
+                if just_units == []:
+                    just_units = units
+                just_data += data
+
+                sleeping_time = 1
+
+                break
+
+            except IndexError as e:
+                # it happens when the page didn't load for some reason
+
+                t = sleeping_time + random.random()
+                print(f"failed because of {e}, sleeping for", t)
+                sys.stdout.flush()
+                time.sleep(t)
+                sleeping_time = 2*t
+                pass
+
+        with open(filename, 'w+') as file:
+            print(page, file=file)
+
+    with open("scraped/" +str(name) + str(start) + str(end) + ".csv", 'w+') as file:
+        nu = [i + "|" + j for (i,j) in zip(just_names, just_units)]
+
+        writer = csv.writer(file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+        writer.writerow(nu)
+
+        for d in just_data:
+            writer.writerow(d)
+
+
+if __name__ == "__main__":
+    
+    scrape_date_range("wroclaw")

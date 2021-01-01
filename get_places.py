@@ -12,53 +12,40 @@ from selenium.webdriver.common.keys import Keys
 from datetime import timedelta, date
 from pathlib import Path
 import time
+from time import sleep
 import random
 import json
 import sys
 import os
 import csv
 
-start = date(2018, 1, 1) # put your favourite date here
-end = date(2018, 2, 1) # and another here
+def get_city_address(city_name, headless=True, wait_for_page=0, chromedriver='./chromedriver'):
 
+    base = "https://www.wunderground.com"
 
-# places = [('pl', 'wrocław'), ('gb', 'london')]
+    chrome_options = Options()  
+    if headless:
+        chrome_options.add_argument("--headless") # Opens the browser up in background
 
+    with webdriver.Chrome(chromedriver, options=chrome_options) as browser:
+        browser.get(base)
+        search = browser.find_element_by_id("wuSearch")
+        # print(search)
+        search.send_keys(city_name)
+        sleep(wait_for_page)
+        search.send_keys(Keys.ENTER)
+        sleep(wait_for_page)
 
-days = int((end - start).days)
+        page = browser.page_source
 
-all_data = []
-just_data = []
-just_names = []
-just_units = []
+        soup = BeautifulSoup(page, 'html.parser')
 
-sleeping_time = 1
+        hrefs = soup.findAll("a", href=True)
 
-# Wrocław is fixed here
-base = "https://www.wunderground.com"
-url = r"https://www.wunderground.com/history/daily/pl/wroc%C5%82aw/EPWR/date/"
-cur_url = url + "2018-01-01"
+        t = [href for href in hrefs if 'history' in str(href)]
+        a = t[0]['href']
+        h, s, _ = a.partition('/date/')
+        return base+h+s
 
-chrome_options = Options()  
-# chrome_options.add_argument("--headless") # Opens the browser up in background
-
-with webdriver.Chrome('./chromedriver_linux64/chromedriver', options=chrome_options) as browser:
-    browser.get(cur_url)
-    
-    search = browser.find_element_by_id("wuSearch")
-    # print(search)
-    search.send_keys("london")
-    search.send_keys(Keys.ENTER)
-
-    page = browser.page_source
-
-    soup = BeautifulSoup(page, 'html.parser')
-
-    hrefs = soup.findAll("a", href=True)
-
-    t = [href for href in hrefs if 'history' in str(href)]
-    a = t[0]['href']
-
-    browser.get(base + a)
-
-
+if __name__ == "__main__":
+    print(get_city_address("wroclaw", headless=True, wait_for_page=4))
