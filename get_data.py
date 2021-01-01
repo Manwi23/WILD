@@ -75,7 +75,8 @@ def scrape_date_range(name, start=date(2018, 1, 1), end=date(2018, 1, 30), chrom
 
                 thead = our_table.findAll('thead')[0]
 
-                names = ['date']
+                names = ['Date']
+                # names = ['Place', 'Date'] (if one wanted to store place in data)
                 units = []
                 data = []
 
@@ -90,7 +91,9 @@ def scrape_date_range(name, start=date(2018, 1, 1), end=date(2018, 1, 30), chrom
 
                 for tr in trs:
                     d = [str(cur)]
+                    # d = [name.lower(), str(cur)] (if one wanted to store place in data)
                     u = ['']
+                    # u = ['', ''] (if one wanted to store place in data)
                     for td in tr.findAll('td'):
                         spans = td.findAll('span')
                         if len(spans) < 2:
