@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import scipy.stats
 from os.path import exists
-
+from sklearn.model_selection import train_test_split
+import math
 def cel(far):
     return (far - 32) * 5.0/9.0
 
@@ -67,6 +68,7 @@ else:
     result_df = pd.DataFrame(out).reset_index()
     result_df.to_csv("processed.csv")
 
+result_df, test_df = train_test_split(result_df, test_size = 0.14285714285, shuffle=False)
 
 def low(data, confidence=0.95):
     a = 1.0 * np.array(data)
@@ -86,16 +88,20 @@ names = ["mean", "95%% low", "95%% high", "values count"]
 
 def calculate_stats(column):
     gb = result_df.groupby(column)["target"]
-    print(pd.concat([gb.mean().rename("mean"),
-                     gb.apply(low).rename("95%% low"),
-                     gb.apply(high).rename("95%% high"), 
-                     gb.count().rename("count")], axis=1).sort_values("count",ascending=False))
+    val = pd.concat([gb.mean().rename("mean"),
+                     gb.apply(low).rename("95% low"),
+                     gb.apply(high).rename("95% high"), 
+                     gb.count().rename("count")], axis=1).sort_values("count",ascending=False)
+    
+    print(val)
+    return val
+
 
 
 print(result_df.head())
-calculate_stats("Wind")
-calculate_stats("Condition")
-calculate_stats("Time")
+wind = calculate_stats("Wind")
+cond = calculate_stats("Condition")
+time = calculate_stats("Time")
 
 cross = pd.crosstab(result_df["Wind"], result_df["Condition"])
 
@@ -107,5 +113,46 @@ print(c_reduced)
 
 cross2 = pd.crosstab(result_df["Wind"], result_df["Condition"],values=result_df["target"], aggfunc="mean")
 # cross2 = pd.crosstab(result_df["Wind"], result_df["Condition"],values=result_df["target"], aggfunc=(lambda x: (low(x), high(x))))
-cross2 = cross2[s.sort_values(ascending=False).index[:8]]
-print(cross2)
+cross2cut = cross2[s.sort_values(ascending=False).index[:8]]
+print(cross2cut)
+
+test_df_mean = test_df["target"].mean()
+# print(test_df_mean)
+
+def calc_score(func, df):
+    v = 0
+    d = 0
+    for i, row in df.iterrows():
+        val = (row["target"] - func(row))**2
+        base = (row["target"] - test_df_mean)**2
+        if math.isnan(val):
+            v+=base
+        else:
+            v+=val
+        d += base
+
+    print(1 - v/d)
+
+def cond_calc(row):
+    # print(row["Wind"])
+    return cond.loc[row["Condition"], "mean"]
+
+def wind_calc(row):
+    # print(row["Wind"])
+    return wind.loc[row["Wind"], "mean"]
+
+def wind_cond_calc(row):
+    # print(row["Wind"])
+    return cross2.loc[row["Wind"], row["Condition"]]
+
+print("wind only")
+calc_score(wind_calc, result_df)
+calc_score(wind_calc, test_df)
+
+print("wind and condition cross-table")
+calc_score(wind_cond_calc, result_df)
+calc_score(wind_cond_calc, test_df)
+
+print("condition only")
+calc_score(cond_calc, result_df)
+calc_score(cond_calc, test_df)
