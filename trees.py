@@ -40,7 +40,7 @@ def calc_score(true_vals, predicted, mean):
     return (1 - v/d)
 
 # results_df = read_or_process_data()
-dataname = "day_p.csv"
+dataname = "night.csv"
 results_df = pd.read_csv(dataname)
 
 ps = []
@@ -81,25 +81,33 @@ for i in ps:
 
 res_data['target'] = target
 train_df, test_df = train_test_split(res_data, test_size = 0.14285714285, shuffle=False)
+train_df, val_df = train_test_split(train_df, test_size = 0.16666666666, shuffle=False)
 
 # xgb_model = xgb.XGBRegressor(objective="reg:squarederror", 
 #                             booster='gblinear', eta=0.5, n_estimators=8)
 
-xgb_model = xgb.XGBRegressor(booster="gblinear",objective="reg:squarederror", n_estimators=8)
+xgb_model = xgb.XGBRegressor(booster="gbtree",objective="reg:squarederror")
 
 target_train = train_df['target']
 train_df = train_df.drop(columns=['target'])
+target_val = val_df['target']
+val_df = val_df.drop(columns=['target'])
 target_test = test_df['target']
 test_df = test_df.drop(columns=['target'])
 
-xgb_model.fit(train_df, target_train)
+xgb_model.fit(train_df, target_train, early_stopping_rounds=5, eval_set=[(train_df, target_train), (val_df, target_val)])
+
+print("*",dataname.rstrip(".csv"))
 
 ytarget = xgb_model.predict(train_df)
 mm = target_train.mean()
-print("* train:", calc_score(target_train, ytarget, mm))
+print("    * train:", calc_score(target_train, ytarget, mm))
+
+ytarget = xgb_model.predict(val_df)
+mm = target_val.mean()
+print("    * val:", calc_score(target_val, ytarget, mm))
 
 ytarget = xgb_model.predict(test_df)
 mm = target_test.mean()
-print("* test:", calc_score(target_test, ytarget, mm))
+print("    * test:", calc_score(target_test, ytarget, mm))
 
-print(dataname)
