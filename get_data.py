@@ -125,7 +125,7 @@ def scrape_date_range(name, start=date(2018, 1, 1), end=date(2018, 1, 30), chrom
 
                 break
 
-            except IndexError as e:
+            except Exception as e:
                 # it happens when the page didn't load for some reason
 
                 t = sleeping_time + random.random()

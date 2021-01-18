@@ -37,17 +37,18 @@ def calc_score(true_vals, predicted, mean):
             v+=val
         d += base
 
-    print(1 - v/d)
+    return (1 - v/d)
 
-results_df = read_or_process_data()
-
+# results_df = read_or_process_data()
+dataname = "day_p.csv"
+results_df = pd.read_csv(dataname)
 
 ps = []
 
 target = results_df['target']
 target_grouped = group_column(target, 'target_g')
 # print(target_grouped)
-forbidden = ['target', 'index', 'Unnamed: 0', 'Date', 'Time']
+forbidden = ['target', 'index', 'Unnamed: 0', 'Date', 'Time', 'Unnamed: 0.1']
 
 # print(results_df.dtypes['target'])
 
@@ -81,22 +82,24 @@ for i in ps:
 res_data['target'] = target
 train_df, test_df = train_test_split(res_data, test_size = 0.14285714285, shuffle=False)
 
-xgb_model = xgb.XGBRegressor(objective="reg:squarederror")
+# xgb_model = xgb.XGBRegressor(objective="reg:squarederror", 
+#                             booster='gblinear', eta=0.5, n_estimators=8)
+
+xgb_model = xgb.XGBRegressor(booster="gblinear",objective="reg:squarederror", n_estimators=8)
 
 target_train = train_df['target']
 train_df = train_df.drop(columns=['target'])
-target_test = test_df.copy()
+target_test = test_df['target']
 test_df = test_df.drop(columns=['target'])
 
 xgb_model.fit(train_df, target_train)
 
-ytarget = xgb_model.predict(test_df)
-mm = target_test['target'].mean()
-
-calc_score(target_test['target'], ytarget, mm)
-
-
 ytarget = xgb_model.predict(train_df)
 mm = target_train.mean()
+print("* train:", calc_score(target_train, ytarget, mm))
 
-calc_score(target_train, ytarget, mm)
+ytarget = xgb_model.predict(test_df)
+mm = target_test.mean()
+print("* test:", calc_score(target_test, ytarget, mm))
+
+print(dataname)
