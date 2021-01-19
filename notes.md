@@ -1,7 +1,7 @@
 ## Notes on experiments
 
 #### Day and night
-Night is between 5 pm and 7 am, the split is done in the way the conditions we take into consideration take place in the night (in night.csv)
+Night is between 5 pm and 7 am, the split is done in the way the conditions we take into consideration take place in the night
 
 1. XGBoost booster="gbtree",objective="reg:squarederror", n_estimators=8
 

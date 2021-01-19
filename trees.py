@@ -49,7 +49,6 @@ target = results_df['target']
 target_grouped = group_column(target, 'target_g')
 # print(target_grouped)
 forbidden = ['target', 'index', 'Unnamed: 0', 'Date', 'Time', 'Unnamed: 0.1']
-
 # print(results_df.dtypes['target'])
 
 res_data = results_df.copy()
@@ -70,6 +69,7 @@ for i in results_df.columns:
         # res_data += [results_df[i]]
     else:
         # print(i, 'dropped')
+        # if i != "Date":
         res_data = res_data.drop(columns=[i])
 
 # res_data = pd.DataFrame(res_data)
@@ -82,6 +82,8 @@ for i in ps:
 res_data['target'] = target
 train_df, test_df = train_test_split(res_data, test_size = 0.14285714285, shuffle=False)
 train_df, val_df = train_test_split(train_df, test_size = 0.16666666666, shuffle=False)
+
+# print(test_df['Date'])
 
 # xgb_model = xgb.XGBRegressor(objective="reg:squarederror", 
 #                             booster='gblinear', eta=0.5, n_estimators=8)
@@ -96,6 +98,12 @@ target_test = test_df['target']
 test_df = test_df.drop(columns=['target'])
 
 xgb_model.fit(train_df, target_train, early_stopping_rounds=5, eval_set=[(train_df, target_train), (val_df, target_val)])
+# print(xgb_model.feature_importances_)
+l = xgb_model.feature_importances_
+rr = list(zip(l, train_df.columns))
+rr = sorted(rr, key=lambda x:-x[0])
+for i in rr:
+    print(i)
 
 print("*",dataname.rstrip(".csv"))
 
