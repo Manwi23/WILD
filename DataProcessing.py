@@ -1,6 +1,7 @@
 import pandas as pd
 from os.path import exists
 from explore import process_df
+from datetime import timedelta, date
 
 
 def ReadData(years, date_start, date_end, place):
@@ -9,7 +10,7 @@ def ReadData(years, date_start, date_end, place):
         dfs.append(process_df(pd.read_csv(f"scraped/{place}{y}-{date_start}{y}-{date_end}.csv"), str(y)))
     return dfs
 
-
+# Based on Michał's code
 """
 timestamps - list of times of measurements before current time
 current_time - time before target
@@ -61,6 +62,34 @@ def HotEncode(df, HotEncodedColumns):
     encoded_df = pd.get_dummies(df, columns = toEncode)
     return encoded_df
 
+# Based on Kasia's code
+def AddRainData(processed):
+    df = pd.read_csv("precipitation.csv")
+    rename_dict={"PS" : "Pressure", 
+                "RH2M" : "Relative Humidity",
+                "QV2M" : "Humidity",
+                "PRECTOT" : "Precipitation"}
+    df = df.rename(columns=rename_dict)
+
+    precip_dict = {}
+    #c = 0
+    for _, row in df.iterrows():
+        day = date(int(row["YEAR"]), int(row["MO"]), int(row["DY"]))
+        next_day = day + timedelta(days = +1)
+        precip_dict[str(next_day)] = row["Precipitation"]
+        #if c < 10: print(str(next_day))
+        #c += 1
+
+    useful = []
+
+    for _, row in processed.iterrows():
+        day = row['Date']
+        useful += [precip_dict[day]]
+
+    precip = pd.DataFrame({'Precip.' : useful})
+
+    processed['Precip.'] = precip['Precip.']
+    return processed
 
 def Process(timestamps, repeatedColumns, HotEncodedColumns,
 years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-31', place='wroclaw'):
@@ -77,7 +106,8 @@ years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-
     return df_processed
 
 if __name__ == '__main__':
-    filename='ProcessedDf.csv'
+    
+    filename="ProcessedDF36h.csv"
     HotEncodedColumns = ['Wind', 'Condition']
     repeatedColumns = ["Temperature"]
     timestamps = [24, 48, 72]
@@ -87,6 +117,10 @@ if __name__ == '__main__':
         result_df = pd.read_csv(filename)
     else:
         result_df = Process(timestamps, repeatedColumns, HotEncodedColumns)
+        # Add rain Data 
+        print("Adding rain...")
+        result_df = AddRainData(result_df)
         result_df.to_csv(filename)
     
     print(result_df.head(5))
+    
