@@ -82,9 +82,9 @@ def AddRainData(processed):
     #c = 0
     for _, row in df.iterrows():
         day = date(int(row["YEAR"]), int(row["MO"]), int(row["DY"]))
-        next_day = day + timedelta(days = +1)
-        precip_dict[str(next_day)] = row["Precipitation"]
-        #if c < 10: print(str(next_day))
+        prev_day = day + timedelta(days = -1)
+        precip_dict[str(prev_day)] = row["Precipitation"]
+        #if c < 10: print(str(prev_day))
         #c += 1
 
     useful = []
