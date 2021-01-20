@@ -131,6 +131,7 @@ dmypy.json
 # Custom
 chromedriver*
 scraped/*
+data/*
 *.csv
 !precipitation.csv
 

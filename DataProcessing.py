@@ -3,6 +3,13 @@ from os.path import exists
 from explore import process_df
 from datetime import timedelta, date
 
+def DeleteUnwanted(df, toDrop=[]):
+    columns = list(df.columns)
+    toDrop += list(filter(lambda t: t.startswith(("Unnamed")), columns))
+    df = df.drop(columns=toDrop)
+    if "" in columns:
+        df = df.drop(columns=[""])
+    return df
 
 def ReadData(years, date_start, date_end, place):
     dfs = []
@@ -103,6 +110,9 @@ years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-
     # Apply 1 hot encoding 
     print("Applying 1 Hot Encoding...")
     df_processed = HotEncode(df_with_time_points, HotEncodedColumns)
+    # Add rain Data 
+    print("Adding rain...")
+    df_processed = AddRainData(df_processed)
     return df_processed
 
 if __name__ == '__main__':
@@ -117,9 +127,6 @@ if __name__ == '__main__':
         result_df = pd.read_csv(filename)
     else:
         result_df = Process(timestamps, repeatedColumns, HotEncodedColumns)
-        # Add rain Data 
-        print("Adding rain...")
-        result_df = AddRainData(result_df)
         result_df.to_csv(filename)
     
     print(result_df.head(5))
