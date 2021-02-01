@@ -48,6 +48,9 @@ def scrape_date_range(name, start=date(2018, 1, 1), end=date(2018, 1, 30), chrom
         cur_dir = "scraped/"+str(cur.year)
         filename = cur_dir+"/"+str(cur)
 
+        if name != 'wroclaw':
+            filename += '_'+name
+
         if not os.path.exists(cur_dir):
             os.makedirs(cur_dir)
 
