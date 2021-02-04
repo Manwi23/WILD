@@ -58,13 +58,12 @@ def XGBoostTest(train_df, test_df):
     print("Test score:", calc_score(target_test, ytarget, mm))
 
 
-if __name__ == '__main__':
+def single_location():
 
     number_of_points = 3
     #number_of_points = 5
     HotEncodedColumns = ['Wind', 'Condition']
     repeatedColumns = ["Temperature",'Wind', 'Condition']
-
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
     dfs = {}
 
@@ -89,6 +88,54 @@ if __name__ == '__main__':
         LinearRegressionTest(train_df, test_df)
         XGBoostTest(train_df, test_df)
         NNTest(train_df, test_df)
+
+def extend_column_list(cols, suffixes):
+    new_cols = []
+    for col in cols:
+        new_cols.append(col)
+        for s in suffixes:
+            new_cols.append(col+"_"+s)
+    
+    return new_cols
+
+
+def multi_location():
+    number_of_points = 3
+    #number_of_points = 5
+    HotEncodedColumns = ['Wind', 'Condition']
+    repeatedColumns = ["Temperature",'Wind', 'Condition']
+    time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
+    places = ["wroclaw", "poznan", "katowice", "prague"]
+    HotEncodedColumns = extend_column_list(HotEncodedColumns, places[1:])
+    repeatedColumns = extend_column_list(repeatedColumns, places[1:])
+
+    dfs = {}
+
+    for time_delta in time_deltas:
+        filename = f"data/WeatherJoint-n{number_of_points}-every{str(time_delta/2)}h-measureT"
+        if exists(filename):
+            print(f"The file {filename} already exists; reading database from file.")
+            df = pd.read_csv(filename)
+        else:
+            timestamps = [time_delta*(i+1) for i in range(number_of_points)]
+            df = process(timestamps, repeatedColumns, HotEncodedColumns, place=None, places=places)
+            print(f"\n\nDataframe {time_delta/2} columns:\n")
+            print(df.columns)
+            df.to_csv(filename)
+        dfs[time_delta] = df
+        
+    for time_delta, df in dfs.items():
+        print("\n-------------------------------------------------------------")
+        print(f"Results for dataframe with measurements every {time_delta/2}h\n")
+        df = deleteUnwanted(df, ['Date', 'index', 'Time'])
+        train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
+        LinearRegressionTest(train_df, test_df)
+        XGBoostTest(train_df, test_df)
+        NNTest(train_df, test_df)
+
+if __name__ == '__main__':
+    multi_location()
+    
 
 """
 Results for measurments every 24h are low.

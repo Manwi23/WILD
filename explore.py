@@ -22,7 +22,7 @@ def process_df(df, label):
     # print(np.mean(df["Temperature"]))
     # print(df.groupby("Date")["Temperature"].mean())
     vals_for_year = list(map(cel, df.groupby("Date")["Temperature"].mean().values))
-    plt.plot(vals_for_year, label=label)
+    # plt.plot(vals_for_year, label=label)
     vals.append(vals_for_year[:89])
     return df
 

@@ -27,6 +27,7 @@ def NNTest(train_df, test_df):
     # print(len(train_df.columns))
 
     in_size = len(train_df.columns)
+    print(in_size)
     hidden1_size = 80
     hidden2_size = 40
     out_size = 1
@@ -109,7 +110,7 @@ def NNTest(train_df, test_df):
 
 
 if __name__ == "__main__":
-    filename = f"data/Weather-n{3}-every{6.0}h-measureT"
+    filename = f"data/WeatherJoint-n{3}-every{6.0}h-measureT"
     if exists(filename):
         print(f"The file {filename} already exists; reading database from file.")
         df = pd.read_csv(filename)

@@ -17,6 +17,24 @@ def readData(years, date_start, date_end, place):
         dfs.append(process_df(pd.read_csv(f"scraped/{place}{y}-{date_start}{y}-{date_end}.csv"), str(y)))
     return dfs
 
+def readDataAndJoin(years, date_start, date_end, places):
+    dfs = []
+    for y in years:
+        df = None
+        prev_p = ""
+        for p in places:
+            v = process_df(pd.read_csv(f"scraped/{p}{y}-{date_start}{y}-{date_end}.csv"), str(y))
+            # print(len(v))
+            if df is None:
+                df = v
+            else:
+                df = df.merge(v, how='inner', on=["Date", "Time"], suffixes=(None, "_"+p))
+                
+        # print(len(df))
+        dfs.append(df)
+    return dfs
+
+
 # Based on Michał's code
 """
 timestamps - list of times of measurements before current time
@@ -94,12 +112,17 @@ def addRainData(processed):
     processed['Precip.'] = precip['Precip.']
     return processed
 
+
+
 def process(timestamps, repeatedColumns, HotEncodedColumns,
-years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-31', place='wroclaw'):
+years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-31', place='wroclaw',places=None):
     
     # Read scraped data
     print("Reading data...")
-    dfs = readData(years = years, date_start=date_start, date_end=date_end, place=place)
+    if place is not None:
+        dfs = readData(years = years, date_start=date_start, date_end=date_end, place=place)
+    elif places is not None:
+        dfs = readDataAndJoin(years = years, date_start=date_start, date_end=date_end, places=places)
     # Add previous points in time and target
     print("Adding previous measurements...")
     df_with_time_points = addTimePoints(dfs, timestamps, repeatedColumns)
