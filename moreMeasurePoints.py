@@ -1,4 +1,4 @@
-from DataProcessing import Process, DeleteUnwanted
+from DataProcessing import process, deleteUnwanted
 from os.path import exists
 import numpy as np
 import pandas as pd
@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 import xgboost as xgb
 from trees import calc_score
+from neural_nets import NNTest
 
 def LinearRegressionTest(train_df, test_df):
 
@@ -27,10 +28,12 @@ def LinearRegressionTest(train_df, test_df):
     print("Test reg.score:", reg.score(X_test, Y_test))
 
 # based on Kasia's code
-def RGBoostTest(train_df, test_df):
+def XGBoostTest(train_df, test_df):
     train_df, val_df = train_test_split(train_df, test_size = 0.16666666666, shuffle=False)
 
-    xgb_model = xgb.XGBRegressor(booster="gbtree",objective="reg:squarederror")
+    print("=====XGBoost=====")
+    
+    xgb_model = xgb.XGBRegressor(booster="gbtree",objective="reg:squarederror",silent=True)
 
     target_train = train_df['target']
     train_df = train_df.drop(columns=['target'])
@@ -39,9 +42,9 @@ def RGBoostTest(train_df, test_df):
     target_test = test_df['target']
     test_df = test_df.drop(columns=['target'])
 
-    xgb_model.fit(train_df, target_train, early_stopping_rounds=5, eval_set=[(train_df, target_train), (val_df, target_val)])
+    xgb_model.fit(train_df, target_train, early_stopping_rounds=10, eval_set=[(train_df, target_train), (val_df, target_val)])
 
-    print("=====RGBoost=====")
+    
     ytarget = xgb_model.predict(train_df)
     mm = target_train.mean()
     print("Train score:", calc_score(target_train, ytarget, mm))
@@ -60,7 +63,7 @@ if __name__ == '__main__':
     number_of_points = 3
     #number_of_points = 5
     HotEncodedColumns = ['Wind', 'Condition']
-    repeatedColumns = ["Temperature"]
+    repeatedColumns = ["Temperature",'Wind', 'Condition']
 
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
     dfs = {}
@@ -72,7 +75,7 @@ if __name__ == '__main__':
             df = pd.read_csv(filename)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
-            df = Process(timestamps, repeatedColumns, HotEncodedColumns)
+            df = process(timestamps, repeatedColumns, HotEncodedColumns)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
             print(df.columns)
             df.to_csv(filename)
@@ -81,10 +84,11 @@ if __name__ == '__main__':
     for time_delta, df in dfs.items():
         print("\n-------------------------------------------------------------")
         print(f"Results for dataframe with measurements every {time_delta/2}h\n")
-        df = DeleteUnwanted(df, ['Date', 'index', 'Time'])
+        df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
         LinearRegressionTest(train_df, test_df)
-        RGBoostTest(train_df, test_df)
+        XGBoostTest(train_df, test_df)
+        NNTest(train_df, test_df)
 
 """
 Results for measurments every 24h are low.

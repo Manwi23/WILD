@@ -39,83 +39,86 @@ def calc_score(true_vals, predicted, mean):
 
     return (1 - v/d)
 
-# results_df = read_or_process_data()
-dataname = "night.csv"
-results_df = pd.read_csv(dataname)
 
-ps = []
+if __name__ == '__main__':
 
-target = results_df['target']
-target_grouped = group_column(target, 'target_g')
-# print(target_grouped)
-forbidden = ['target', 'index', 'Unnamed: 0', 'Date', 'Time', 'Unnamed: 0.1']
-# print(results_df.dtypes['target'])
+    # results_df = read_or_process_data()
+    dataname = "night.csv"
+    results_df = pd.read_csv(dataname)
 
-res_data = results_df.copy()
+    ps = []
 
-for i in results_df.columns:
-    if i not in forbidden:
-        if results_df.dtypes[i] != 'object':
-            # print(i, results_df.dtypes[i])
-            # print(i)
-            p = apply_pearson(target, results_df[i])
-            ps += [(i,p)]
+    target = results_df['target']
+    target_grouped = group_column(target, 'target_g')
+    # print(target_grouped)
+    forbidden = ['target', 'index', 'Unnamed: 0', 'Date', 'Time', 'Unnamed: 0.1']
+    # print(results_df.dtypes['target'])
+
+    res_data = results_df.copy()
+
+    for i in results_df.columns:
+        if i not in forbidden:
+            if results_df.dtypes[i] != 'object':
+                # print(i, results_df.dtypes[i])
+                # print(i)
+                p = apply_pearson(target, results_df[i])
+                ps += [(i,p)]
+            else:
+                # print(i)
+                # col = group_column(results_df[i])
+                p = apply_chi2(target_grouped['target_g'], results_df[i])
+                ps += [(i,p)]
+                res_data = res_data.drop(columns=[i])
+            # res_data += [results_df[i]]
         else:
-            # print(i)
-            # col = group_column(results_df[i])
-            p = apply_chi2(target_grouped['target_g'], results_df[i])
-            ps += [(i,p)]
+            # print(i, 'dropped')
+            # if i != "Date":
             res_data = res_data.drop(columns=[i])
-        # res_data += [results_df[i]]
-    else:
-        # print(i, 'dropped')
-        # if i != "Date":
-        res_data = res_data.drop(columns=[i])
 
-# res_data = pd.DataFrame(res_data)
-# print(res_data)
+    # res_data = pd.DataFrame(res_data)
+    # print(res_data)
 
-# print(ps)
-for i in ps:
-    print(i)
+    # print(ps)
+    for i in ps:
+        print(i)
 
-res_data['target'] = target
-train_df, test_df = train_test_split(res_data, test_size = 0.14285714285, shuffle=False)
-train_df, val_df = train_test_split(train_df, test_size = 0.16666666666, shuffle=False)
+    res_data['target'] = target
+    train_df, test_df = train_test_split(res_data, test_size = 0.14285714285, shuffle=False)
+    train_df, val_df = train_test_split(train_df, test_size = 0.16666666666, shuffle=False)
 
-# print(test_df['Date'])
+    # print(test_df['Date'])
 
-# xgb_model = xgb.XGBRegressor(objective="reg:squarederror", 
-#                             booster='gblinear', eta=0.5, n_estimators=8)
+    # xgb_model = xgb.XGBRegressor(objective="reg:squarederror", 
+    #                             booster='gblinear', eta=0.5, n_estimators=8)
 
-xgb_model = xgb.XGBRegressor(booster="gbtree",objective="reg:squarederror")
+    xgb_model = xgb.XGBRegressor(booster="gbtree",objective="reg:squarederror")
 
-target_train = train_df['target']
-train_df = train_df.drop(columns=['target'])
-target_val = val_df['target']
-val_df = val_df.drop(columns=['target'])
-target_test = test_df['target']
-test_df = test_df.drop(columns=['target'])
+    target_train = train_df['target']
+    train_df = train_df.drop(columns=['target'])
+    target_val = val_df['target']
+    val_df = val_df.drop(columns=['target'])
+    target_test = test_df['target']
+    test_df = test_df.drop(columns=['target'])
 
-xgb_model.fit(train_df, target_train, early_stopping_rounds=5, eval_set=[(train_df, target_train), (val_df, target_val)])
-# print(xgb_model.feature_importances_)
-l = xgb_model.feature_importances_
-rr = list(zip(l, train_df.columns))
-rr = sorted(rr, key=lambda x:-x[0])
-for i in rr:
-    print(i)
+    xgb_model.fit(train_df, target_train, early_stopping_rounds=5, eval_set=[(train_df, target_train), (val_df, target_val)], verbose=False)
+    # print(xgb_model.feature_importances_)
+    l = xgb_model.feature_importances_
+    rr = list(zip(l, train_df.columns))
+    rr = sorted(rr, key=lambda x:-x[0])
+    for i in rr:
+        print(i)
 
-print("*",dataname.rstrip(".csv"))
+    print("*",dataname.rstrip(".csv"))
 
-ytarget = xgb_model.predict(train_df)
-mm = target_train.mean()
-print("    * train:", calc_score(target_train, ytarget, mm))
+    ytarget = xgb_model.predict(train_df)
+    mm = target_train.mean()
+    print("    * train:", calc_score(target_train, ytarget, mm))
 
-ytarget = xgb_model.predict(val_df)
-mm = target_val.mean()
-print("    * val:", calc_score(target_val, ytarget, mm))
+    ytarget = xgb_model.predict(val_df)
+    mm = target_val.mean()
+    print("    * val:", calc_score(target_val, ytarget, mm))
 
-ytarget = xgb_model.predict(test_df)
-mm = target_test.mean()
-print("    * test:", calc_score(target_test, ytarget, mm))
+    ytarget = xgb_model.predict(test_df)
+    mm = target_test.mean()
+    print("    * test:", calc_score(target_test, ytarget, mm))
 

@@ -19,8 +19,8 @@ def process_df(df, label):
 
     df = df.rename(columns=rename_dict)
     df["Temperature"] = df["Temperature"].apply(cel)
-    print(np.mean(df["Temperature"]))
-    print(df.groupby("Date")["Temperature"].mean())
+    # print(np.mean(df["Temperature"]))
+    # print(df.groupby("Date")["Temperature"].mean())
     vals_for_year = list(map(cel, df.groupby("Date")["Temperature"].mean().values))
     plt.plot(vals_for_year, label=label)
     vals.append(vals_for_year[:89])

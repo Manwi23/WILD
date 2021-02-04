@@ -69,7 +69,7 @@ def hotEncode(df, HotEncodedColumns):
 
 # Based on Kasia's code
 def addRainData(processed):
-    df = pd.read_csv("precipitation.csv")
+    df = pd.read_csv("csvs/precipitation.csv")
     rename_dict={"PS" : "Pressure", 
                 "RH2M" : "Relative Humidity",
                 "QV2M" : "Humidity",
@@ -113,7 +113,7 @@ years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-
 
 if __name__ == '__main__':
     
-    filename="ProcessedDF36h.csv"
+    filename="csvs/ProcessedDF36h.csv"
     HotEncodedColumns = ['Wind', 'Condition']
     repeatedColumns = ["Temperature"]
     timestamps = [24, 48, 72]
