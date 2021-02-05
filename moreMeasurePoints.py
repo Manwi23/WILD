@@ -34,8 +34,6 @@ def XGBoostTest(train_df, test_df):
 
     print("=====XGBoost=====")
     
-    xgb_model = xgb.XGBRegressor(booster="gbtree",objective="reg:squarederror",silent=True)
-
     target_train = train_df['target']
     train_df = train_df.drop(columns=['target'])
     target_val = val_df['target']
@@ -43,18 +41,26 @@ def XGBoostTest(train_df, test_df):
     target_test = test_df['target']
     test_df = test_df.drop(columns=['target'])
 
-    xgb_model.fit(train_df, target_train, early_stopping_rounds=10, eval_set=[(train_df, target_train), (val_df, target_val)])
+    matrix = xgb.DMatrix(train_df, target_train)
+    matrix_val = xgb.DMatrix(val_df, target_val)
 
-    
-    ytarget = xgb_model.predict(train_df)
+    xgb_model = xgb.train({'booster':"gbtree",'objective':"reg:squarederror"}, 
+                matrix, early_stopping_rounds=10, 
+                evals=[(matrix, "target_train"), (matrix_val, "target_val")],
+                verbose_eval=False)
+
+    m_train = xgb.DMatrix(train_df)
+    ytarget = xgb_model.predict(m_train)
     mm = target_train.mean()
     print("Train score:", calc_score(target_train, ytarget, mm))
 
-    ytarget = xgb_model.predict(val_df)
+    m_val = xgb.DMatrix(val_df)
+    ytarget = xgb_model.predict(m_val)
     mm = target_val.mean()
     print("Val score:", calc_score(target_val, ytarget, mm))
 
-    ytarget = xgb_model.predict(test_df)
+    m_test = xgb.DMatrix(test_df)
+    ytarget = xgb_model.predict(m_test)
     mm = target_test.mean()
     print("Test score:", calc_score(target_test, ytarget, mm))
 
