@@ -84,6 +84,8 @@ def hotEncode(df, HotEncodedColumns):
 
 # Based on Kasia's code
 def addRainData(processed, places):
+    if places is None:
+        places = ['wroclaw']
     for place in places:
         df = pd.read_csv("csvs/precip_{}.csv".format(place))
         rename_dict={"PS" : "Pressure", 
