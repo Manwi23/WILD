@@ -7,6 +7,7 @@ from sklearn.linear_model import LinearRegression
 import xgboost as xgb
 from trees import calc_score
 from neural_nets import NNTest
+from datetime import datetime
 
 def LinearRegressionTest(train_df, test_df):
 
@@ -116,15 +117,15 @@ def multi_location():
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
-            def make_float(v):
-                try:
-                    return float(v)
-                except:
-                    print(v)
-                    return 0
-            # print(df[df["Precip._dresden"] == "Cloudy"])
+            # def make_float(v):
+            #     try:
+            #         return float(v)
+            #     except:
+            #         print(v)
+            #         return 0
+            # # print(df[df["Precip._dresden"] == "Cloudy"])
 
-            df["Precip._dresden"] = df["Precip._dresden"].apply(make_float)
+            # df["Precip._dresden"] = df["Precip._dresden"].apply(make_float)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
             df = process(timestamps, repeatedColumns, HotEncodedColumns, place=None, places=places)

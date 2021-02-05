@@ -1,22 +1,22 @@
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from datetime import datetime, timedelta
 import scipy.stats
 from os.path import exists
 from sklearn.model_selection import train_test_split
 import math
+from datetime import datetime as dt
+from datetime import timedelta
 
 def cel(far):
     return (far - 32) * 5.0/9.0
 
 def fix_time(s):
-    time = datetime.strptime(s, '%I:%M %p')
+    ttime = dt.strptime(s, "%I:%M %p")
 
     if ":20" in s or ":50" in s:
-        time = time + timedelta(minutes=10)
+        ttime = ttime + timedelta(minutes=10)
 
-    return time.strftime('%I:%M %p')
+    return ttime.strftime('%I:%M %p')
 
 
 def process_df(df, label):

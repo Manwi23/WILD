@@ -83,36 +83,43 @@ def hotEncode(df, HotEncodedColumns):
     return encoded_df
 
 # Based on Kasia's code
-def addRainData(processed):
-    df = pd.read_csv("csvs/precipitation.csv")
-    rename_dict={"PS" : "Pressure", 
-                "RH2M" : "Relative Humidity",
-                "QV2M" : "Humidity",
-                "PRECTOT" : "Precipitation"}
-    df = df.rename(columns=rename_dict)
+def addRainData(processed, places):
+    for place in places:
+        df = pd.read_csv("csvs/precip_{}.csv".format(place))
+        rename_dict={"PS" : "Pressure", 
+                    "RH2M" : "Relative Humidity",
+                    "QV2M" : "Humidity",
+                    "PRECTOT" : "Precipitation"}
+        df = df.rename(columns=rename_dict)
 
-    precip_dict = {}
+        precip_dict = {}
 
-    for _, row in df.iterrows():
-        day = date(int(row["YEAR"]), int(row["MO"]), int(row["DY"]))
-        prev_day = day + timedelta(days = -1)
-        precip_dict[str(prev_day)] = row["Precipitation"]
+        for _, row in df.iterrows():
+            day = date(int(row["YEAR"]), int(row["MO"]), int(row["DY"]))
+            prev_day = day + timedelta(days = -1)
+            precip_dict[str(prev_day)] = row["Precipitation"]
 
-    useful = []
+        useful = []
 
-    for _, row in processed.iterrows():
-        day = row['Date']
-        useful += [precip_dict[day]]
+        for _, row in processed.iterrows():
+            day = row['Date']
+            useful += [precip_dict[day]]
 
-    precip = pd.DataFrame({'Precip.' : useful})
+        if place != 'wroclaw':
+            precip = pd.DataFrame({f'Precip._{place}': useful})
 
-    processed['Precip.'] = precip['Precip.']
+            processed[f'Precip._{place}'] = precip[f'Precip._{place}']
+        else:
+            precip = pd.DataFrame({'Precip.': useful})
+
+            processed['Precip.'] = precip['Precip.']
     return processed
 
 
 
 def process(timestamps, repeatedColumns, HotEncodedColumns,
-years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-31', place='wroclaw',places=None):
+            years =  [2014,2015,2016,2017,2018,2019,2020], 
+            date_start="01-01", date_end='03-31', place='wroclaw',places=None):
     
     # Read scraped data
     print("Reading data...")
@@ -128,7 +135,7 @@ years =  [2014,2015,2016,2017,2018,2019,2020], date_start="01-01", date_end='03-
     df_processed = hotEncode(df_with_time_points, HotEncodedColumns)
     # Add rain Data 
     print("Adding rain...")
-    df_processed = addRainData(df_processed)
+    df_processed = addRainData(df_processed, places)
     return df_processed
 
 if __name__ == '__main__':
