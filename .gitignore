@@ -131,7 +131,7 @@ dmypy.json
 # Custom
 chromedriver*
 scraped/*
-data/*
+
 # *.csv
 # !precipitation.csv
 !scraped/wroclaw*
@@ -141,3 +141,4 @@ data/*
 !scraped/katowice*
 
 .vscode/*
+test.py

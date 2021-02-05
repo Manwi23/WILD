@@ -24,13 +24,10 @@ def readDataAndJoin(years, date_start, date_end, places):
         prev_p = ""
         for p in places:
             v = process_df(pd.read_csv(f"scraped/{p}{y}-{date_start}{y}-{date_end}.csv"), str(y))
-            # print(len(v))
             if df is None:
                 df = v
             else:
                 df = df.merge(v, how='inner', on=["Date", "Time"], suffixes=(None, "_"+p))
-                
-        # print(len(df))
         dfs.append(df)
     return dfs
 

@@ -1,13 +1,23 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 import scipy.stats
 from os.path import exists
 from sklearn.model_selection import train_test_split
 import math
+
 def cel(far):
     return (far - 32) * 5.0/9.0
+
+def fix_time(s):
+    time = datetime.strptime(s, '%I:%M %p')
+
+    if ":20" in s or ":50" in s:
+        time = time + timedelta(minutes=10)
+
+    return time.strftime('%I:%M %p')
+
 
 def process_df(df, label):
 
@@ -19,11 +29,9 @@ def process_df(df, label):
 
     df = df.rename(columns=rename_dict)
     df["Temperature"] = df["Temperature"].apply(cel)
-    # print(np.mean(df["Temperature"]))
-    # print(df.groupby("Date")["Temperature"].mean())
-    vals_for_year = list(map(cel, df.groupby("Date")["Temperature"].mean().values))
-    # plt.plot(vals_for_year, label=label)
-    vals.append(vals_for_year[:89])
+
+    df["Time"] = df["Time"].apply(fix_time)
+
     return df
 
 def read_or_process_data():

@@ -2657,7 +2657,7 @@ Date|,Time|,Temperature|F,Dew Point|F,Humidity|%,Wind|,Wind Speed|mph,Wind Gust|
 2015-02-25,7:50 AM,36,30,81,WSW,3,0,29.24,0.0,Mostly Cloudy
 2015-02-25,8:20 AM,37,30,75,WSW,5,0,29.24,0.0,Mostly Cloudy
 2015-02-25,8:50 AM,37,30,75,WSW,7,0,29.24,0.0,Mostly Cloudy
-2015-02-25,9:20 AM,37,32,81,0,0,29.24,0.0,Cloudy
+2015-02-25,9:20 AM,37,32,81,SW,0,0,29.24,0.0,Cloudy
 2015-02-25,9:50 AM,39,32,75,SW,7,0,29.24,0.0,Mostly Cloudy
 2015-02-25,10:20 AM,41,32,70,W,8,0,29.26,0.0,Mostly Cloudy
 2015-02-25,10:50 AM,41,34,76,W,8,0,29.26,0.0,Mostly Cloudy

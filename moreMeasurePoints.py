@@ -105,7 +105,7 @@ def multi_location():
     HotEncodedColumns = ['Wind', 'Condition']
     repeatedColumns = ["Temperature",'Wind', 'Condition']
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
-    places = ["wroclaw", "poznan", "katowice", "prague"]
+    places = ["wroclaw", "poznan", "katowice", "prague", "dresden"]
     HotEncodedColumns = extend_column_list(HotEncodedColumns, places[1:])
     repeatedColumns = extend_column_list(repeatedColumns, places[1:])
 
@@ -116,6 +116,15 @@ def multi_location():
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
+            def make_float(v):
+                try:
+                    return float(v)
+                except:
+                    print(v)
+                    return 0
+            # print(df[df["Precip._dresden"] == "Cloudy"])
+
+            df["Precip._dresden"] = df["Precip._dresden"].apply(make_float)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
             df = process(timestamps, repeatedColumns, HotEncodedColumns, place=None, places=places)
