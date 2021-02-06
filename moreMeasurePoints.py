@@ -9,24 +9,82 @@ from trees import calc_score
 from neural_nets import NNTest
 from datetime import datetime
 
+
+class Model():
+    def __init__(self, train_df, test_df, label = ""):
+        self.train_df = train_df
+        self.test_df  = test_df
+        self.label = label
+
+    def fit(self):
+        print('fit not implemented')
+        pass
+    
+    def predict(self):
+        print('predict not implemented')
+
+class LinearRegressionModel(Model):
+    def __init__(self, train_df, test_df, label = ""):
+        super().__init__(train_df, test_df, label)
+        self.label = "LinearReg " + self.label
+        # prepare data for fitting:
+        self.features = list(self.train_df.columns)
+        self.features.remove('target')
+
+    def prepare_data(self, df):
+        Y = np.array(df['target'])
+        Y = Y.reshape(-1, 1)
+        X = np.array(df[self.features])
+        return X, Y
+
+    def fit(self):
+        X_train, Y_train = self.prepare_data(self.train_df)
+        self.model = LinearRegression().fit(X_train, Y_train)
+    
+    def compute_score(self, df):
+        X, Y = self.prepare_data(df)
+        return self.model.score(X, Y)
+
+    def show_score(self):
+        print(self.label + " Scores:")
+        print("Train reg.score:", self.compute_score(self.train_df))
+        print("Test reg.score:", self.compute_score(self.test_df))
+
+    def _predict(self, X):
+        #X, _ = self.prepare_data(df)
+        return self.model.predict(X)
+    
+    def predict_df(self, df):
+        X, _ = self.prepare_data(df)
+        return self.predict(X)
+    
+    def compute_errors(self, df):
+        X, trueY = self.prepare_data(df)
+        modelY = self.predict(X)
+        return modelY-trueY
+
 def LinearRegressionTest(train_df, test_df):
 
-    features = list(train_df.columns)
-    features.remove('target')
+    model = LinearRegressionModel(train_df, test_df)
+    model.fit()
+    model.show_score()
 
-    Y_train = np.array(train_df['target'])
-    Y_train = Y_train.reshape(-1, 1)
-    X_train = np.array(train_df[features])
+    # features = list(train_df.columns)
+    # features.remove('target')
 
-    X_test = np.array(test_df[features])
-    Y_test = np.array(test_df['target'])
-    Y_test = Y_test.reshape(-1, 1)
+    # Y_train = np.array(train_df['target'])
+    # Y_train = Y_train.reshape(-1, 1)
+    # X_train = np.array(train_df[features])
 
-    reg = LinearRegression().fit(X_train, Y_train)
-    print("=====Linear Regression=====")
-    #print("features:", features)
-    print("Train reg.score:", reg.score(X_train, Y_train))
-    print("Test reg.score:", reg.score(X_test, Y_test))
+    # X_test = np.array(test_df[features])
+    # Y_test = np.array(test_df['target'])
+    # Y_test = Y_test.reshape(-1, 1)
+
+    # reg = LinearRegression().fit(X_train, Y_train)
+    # print("=====Linear Regression=====")
+    # #print("features:", features)
+    # print("Train reg.score:", reg.score(X_train, Y_train))
+    # print("Test reg.score:", reg.score(X_test, Y_test))
 
 # based on Kasia's code
 def XGBoostTest(train_df, test_df):
@@ -111,8 +169,10 @@ def multi_location():
     #number_of_points = 5
     HotEncodedColumns = ['Wind', 'Condition']
     repeatedColumns = ["Temperature",'Wind', 'Condition']
+    #repeatedColumns = ["Temperature",'Wind']
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
     places = ["wroclaw", "poznan", "katowice", "prague", "dresden"]
+    #places = ["wroclaw"]
     HotEncodedColumns = extend_column_list(HotEncodedColumns, places[1:])
     repeatedColumns = extend_column_list(repeatedColumns, places[1:])
 
@@ -146,8 +206,8 @@ def multi_location():
         df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
         LinearRegressionTest(train_df, test_df)
-        XGBoostTest(train_df, test_df)
-        NNTest(train_df, test_df)
+        #XGBoostTest(train_df, test_df)
+        #NNTest(train_df, test_df)
 
 if __name__ == '__main__':
     multi_location()
