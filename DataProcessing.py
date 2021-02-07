@@ -11,17 +11,19 @@ def deleteUnwanted(df, toDrop=[]):
         df = df.drop(columns=[""])
     return df
 
-def readData(years, date_start, date_end, place):
+def readData(years, date_start, date_end, place, last_different=False, last_one=[]):
     dfs = []
     for y in years:
         dfs.append(process_df(pd.read_csv(f"scraped/{place}{y}-{date_start}{y}-{date_end}.csv"), str(y)))
+    if last_different:
+        y, ds, de = last_one
+        dfs.append(process_df(pd.read_csv(f"scraped/{place}{y}-{ds}{y}-{de}.csv"), str(y)))
     return dfs
 
 def readDataAndJoin(years, date_start, date_end, places):
     dfs = []
     for y in years:
         df = None
-        prev_p = ""
         for p in places:
             v = process_df(pd.read_csv(f"scraped/{p}{y}-{date_start}{y}-{date_end}.csv"), str(y))
             if df is None:
@@ -121,12 +123,15 @@ def addRainData(processed, places):
 
 def process(timestamps, repeatedColumns, HotEncodedColumns,
             years =  [2014,2015,2016,2017,2018,2019,2020], 
-            date_start="01-01", date_end='03-31', rain_present=True, place='wroclaw',places=None):
+            date_start="01-01", date_end='03-31', rain_present=True,
+            place='wroclaw',places=None, last_different=False, last_one=[]):
     
     # Read scraped data
     print("Reading data...")
     if place is not None:
-        dfs = readData(years = years, date_start=date_start, date_end=date_end, place=place)
+        dfs = readData(years = years, date_start=date_start,
+                        date_end=date_end, place=place, last_different=last_different,
+                        last_one=last_one)
     elif places is not None:
         dfs = readDataAndJoin(years = years, date_start=date_start, date_end=date_end, places=places)
     # Add previous points in time and target

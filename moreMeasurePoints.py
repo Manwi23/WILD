@@ -66,7 +66,8 @@ def XGBoostTest(train_df, test_df):
 
 
 def single_location(years = [2014,2015,2016,2017,2018,2019,2020], 
-                    date_start="01-01", date_end='03-31', rain_present=True):
+                    date_start="01-01", date_end='03-31', rain_present=True,
+                    colab_presentation = False, last_part = []):
 
     number_of_points = 3
     #number_of_points = 5
@@ -76,14 +77,19 @@ def single_location(years = [2014,2015,2016,2017,2018,2019,2020],
     dfs = {}
 
     for time_delta in time_deltas:
-        # filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT"
-        filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT-predicting-now"
+        filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT" if not colab_presentation else \
+                    f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT-predicting-now"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
-            df = process(timestamps, repeatedColumns, HotEncodedColumns, years, date_start, date_end, rain_present)
+            if colab_presentation:
+                df = process(timestamps, repeatedColumns, HotEncodedColumns,
+                                years, date_start, date_end, rain_present,
+                                last_different=True, last_one=last_part)
+            else: 
+                df = process(timestamps, repeatedColumns, HotEncodedColumns, years, date_start, date_end, rain_present)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
             print(df.columns)
             df.to_csv(filename)
