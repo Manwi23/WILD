@@ -65,9 +65,9 @@ def XGBoostTest(train_df, test_df):
     print("Test score:", calc_score(target_test, ytarget, mm))
 
 
-def single_location(years = [2014,2015,2016,2017,2018,2019,2020], 
-                    date_start="01-01", date_end='03-31', rain_present=True,
-                    colab_presentation = False, last_part = [], only_prepare=False):
+def single_location_colab_version(years = [2014,2015,2016,2017,2018,2019,2020], 
+                                    date_start="01-01", date_end='03-31', rain_present=True,
+                                    colab_presentation = False, last_part = [], only_prepare=False):
 
     number_of_points = 3
     #number_of_points = 5
