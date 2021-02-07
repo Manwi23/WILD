@@ -65,7 +65,8 @@ def XGBoostTest(train_df, test_df):
     print("Test score:", calc_score(target_test, ytarget, mm))
 
 
-def single_location():
+def single_location(years = [2014,2015,2016,2017,2018,2019,2020], 
+                    date_start="01-01", date_end='03-31'):
 
     number_of_points = 3
     #number_of_points = 5
@@ -82,7 +83,7 @@ def single_location():
             df = pd.read_csv(filename)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
-            df = process(timestamps, repeatedColumns, HotEncodedColumns)
+            df = process(timestamps, repeatedColumns, HotEncodedColumns, years, date_start, date_end)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
             print(df.columns)
             df.to_csv(filename)
