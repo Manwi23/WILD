@@ -42,7 +42,7 @@ class LinearRegressionModel(Model):
         return self.model.score(X, Y)
 
     def show_score(self):
-        print(self.label + " Scores:")
+        print(self.label + "scores:")
         print("Train reg.score:", self.compute_score(self.train_df))
         print("Test reg.score:", self.compute_score(self.test_df))
 
@@ -77,7 +77,7 @@ class XGBoostModel(Model):
                 verbose_eval=False)
 
     def show_score(self):
-        print(self.label + " Scores:")
+        print(self.label + "scores:")
         print("Train score:", self.compute_score(self.train_df))
         print("Val score:", self.compute_score(self.val_df))
         print("Test score:", self.compute_score(self.test_df))
@@ -307,8 +307,14 @@ def multi_location(rain=True, histograms=False):
     return models
 
 if __name__ == '__main__':
-    multi_location()
+    # multi_location()
     #single_location()
+    models = single_location(rain=False)
+    ans = current_weather(models)
+    for td in ans:
+        for m in ans:
+            print(td, m)
+            print(ans[-10:])
     
 
 """
