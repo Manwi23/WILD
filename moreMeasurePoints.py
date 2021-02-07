@@ -13,7 +13,7 @@ from DataProcessing import deleteUnwanted, process
 from neural_nets import NNModel, NNTest
 from trees import calc_score
 from weathermodel import Model
-from get_data import scrape_date_range
+# from get_data import scrape_date_range
 
 
 class LinearRegressionModel(Model):
@@ -173,7 +173,7 @@ def current_weather(models):
                 predicted += [res + mes]
             all_predictions[time_delta][m] = predicted
 
-    return all_predictions
+    return all_predictions, dfs[24]['TemperaturePrev12h']
 
 def single_location(rain=True, histograms=False, scores=False):
 
@@ -270,7 +270,7 @@ def multi_location(rain=True, histograms=False, scores=False):
     return models
 
 if __name__ == '__main__':
-    # multi_location()
+    multi_location()
     #single_location()
     models = single_location(rain=False)
     ans = current_weather(models)
