@@ -67,7 +67,7 @@ def XGBoostTest(train_df, test_df):
 
 def single_location(years = [2014,2015,2016,2017,2018,2019,2020], 
                     date_start="01-01", date_end='03-31', rain_present=True,
-                    colab_presentation = False, last_part = []):
+                    colab_presentation = False, last_part = [], only_prepare=False):
 
     number_of_points = 3
     #number_of_points = 5
@@ -78,7 +78,7 @@ def single_location(years = [2014,2015,2016,2017,2018,2019,2020],
 
     for time_delta in time_deltas:
         filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT" if not colab_presentation else \
-                    f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT-predicting-now"
+                    f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT-predicting-now-test"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
@@ -87,7 +87,7 @@ def single_location(years = [2014,2015,2016,2017,2018,2019,2020],
             if colab_presentation:
                 df = process(timestamps, repeatedColumns, HotEncodedColumns,
                                 years, date_start, date_end, rain_present,
-                                last_different=True, last_one=last_part)
+                                last_different=True, last_one=last_part, current_time=0)
             else: 
                 df = process(timestamps, repeatedColumns, HotEncodedColumns, years, date_start, date_end, rain_present)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
@@ -95,14 +95,15 @@ def single_location(years = [2014,2015,2016,2017,2018,2019,2020],
             df.to_csv(filename)
         dfs[time_delta] = df
         
-    for time_delta, df in dfs.items():
-        print("\n-------------------------------------------------------------")
-        print(f"Results for dataframe with measurements every {time_delta/2}h\n")
-        df = deleteUnwanted(df, ['Date', 'index', 'Time'])
-        train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
-        LinearRegressionTest(train_df, test_df)
-        XGBoostTest(train_df, test_df)
-        NNTest(train_df, test_df)
+    if not only_prepare:
+        for time_delta, df in dfs.items():
+            print("\n-------------------------------------------------------------")
+            print(f"Results for dataframe with measurements every {time_delta/2}h\n")
+            df = deleteUnwanted(df, ['Date', 'index', 'Time'])
+            train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
+            LinearRegressionTest(train_df, test_df)
+            XGBoostTest(train_df, test_df)
+            NNTest(train_df, test_df)
 
 def extend_column_list(cols, suffixes):
     new_cols = []

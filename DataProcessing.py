@@ -124,7 +124,8 @@ def addRainData(processed, places):
 def process(timestamps, repeatedColumns, HotEncodedColumns,
             years =  [2014,2015,2016,2017,2018,2019,2020], 
             date_start="01-01", date_end='03-31', rain_present=True,
-            place='wroclaw',places=None, last_different=False, last_one=[]):
+            place='wroclaw',places=None, last_different=False, last_one=[],
+            current_time = 24):
     
     # Read scraped data
     print("Reading data...")
@@ -136,7 +137,7 @@ def process(timestamps, repeatedColumns, HotEncodedColumns,
         dfs = readDataAndJoin(years = years, date_start=date_start, date_end=date_end, places=places)
     # Add previous points in time and target
     print("Adding previous measurements...")
-    df_with_time_points = addTimePoints(dfs, timestamps, repeatedColumns)
+    df_with_time_points = addTimePoints(dfs, timestamps, repeatedColumns, current_time=current_time)
     # Apply 1 hot encoding 
     print("Applying 1 Hot Encoding...")
     df_processed = hotEncode(df_with_time_points, HotEncodedColumns)
