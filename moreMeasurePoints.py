@@ -92,22 +92,24 @@ class XGBoostModel(Model):
         return self.model.predict(m).reshape(-1,1)
     
 
-def LinearRegressionTest(train_df, test_df, histograms=True):
+def LinearRegressionTest(train_df, test_df, histograms=True, scores=True):
 
     model = LinearRegressionModel(train_df, test_df)
     model.fit() # model.fit(ridge=False) 
-    model.show_score()
+    if scores:
+        model.show_score()
     if histograms:
         model.error_histogram(model.train_df)
         model.error_histogram(model.test_df)
 
     return model
 
-def XGBoostTest(train_df, test_df, histograms=True):
+def XGBoostTest(train_df, test_df, histograms=True, scores=True):
 
     model = XGBoostModel(train_df, test_df)
     model.fit()
-    model.show_score()
+    if scores:
+        model.show_score()
     if histograms:
         model.error_histogram(model.train_df)
         model.error_histogram(model.val_df)
@@ -214,7 +216,7 @@ def single_location_colab_version(years = [2014,2015,2016,2017,2018,2019,2020],
             XGBoostTest(train_df, test_df)
             NNTest(train_df, test_df)
 
-def single_location(rain=True, histograms=False):
+def single_location(rain=True, histograms=False, scores=False):
 
     number_of_points = 3
     #number_of_points = 5
@@ -239,14 +241,15 @@ def single_location(rain=True, histograms=False):
     models = {}
 
     for time_delta, df in dfs.items():
-        print("\n-------------------------------------------------------------")
-        print(f"Results for dataframe with measurements every {time_delta/2}h\n")
+        if scores:
+            print("\n-------------------------------------------------------------")
+            print(f"Results for dataframe with measurements every {time_delta/2}h\n")
         df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
         models[time_delta] = {
-            "linear":LinearRegressionTest(train_df, test_df, histograms=False),
-            "xgboost":XGBoostTest(train_df, test_df, histograms=False),
-            "neuralnet":NNTest(train_df, test_df, histograms=False)
+            "linear":LinearRegressionTest(train_df, test_df, histograms=histograms, scores=scores),
+            "xgboost":XGBoostTest(train_df, test_df, histograms=histograms, scores=scores),
+            "neuralnet":NNTest(train_df, test_df, histograms=histograms, scores=scores)
         }
     
     return models
@@ -261,7 +264,7 @@ def extend_column_list(cols, suffixes):
     return new_cols
 
 
-def multi_location(rain=True, histograms=False):
+def multi_location(rain=True, histograms=False, scores=False):
     number_of_points = 3
     #number_of_points = 5
     HotEncodedColumns = ['Wind', 'Condition']
@@ -294,14 +297,15 @@ def multi_location(rain=True, histograms=False):
     models = {}
 
     for time_delta, df in dfs.items():
-        print("\n-------------------------------------------------------------")
-        print(f"Results for dataframe with measurements every {time_delta/2}h\n")
+        if scores:
+            print("\n-------------------------------------------------------------")
+            print(f"Results for dataframe with measurements every {time_delta/2}h\n")
         df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
         models[time_delta] = {
-            "linear":LinearRegressionTest(train_df, test_df, histograms),
-            "xgboost":XGBoostTest(train_df, test_df, histograms),
-            "neuralnet":NNTest(train_df, test_df, histograms)
+            "linear":LinearRegressionTest(train_df, test_df, histograms, scores=scores),
+            "xgboost":XGBoostTest(train_df, test_df, histograms, scores=scores),
+            "neuralnet":NNTest(train_df, test_df, histograms, scores=scores)
         }
     
     return models
