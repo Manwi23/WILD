@@ -66,7 +66,7 @@ def XGBoostTest(train_df, test_df):
 
 
 def single_location(years = [2014,2015,2016,2017,2018,2019,2020], 
-                    date_start="01-01", date_end='03-31'):
+                    date_start="01-01", date_end='03-31', rain_present=True):
 
     number_of_points = 3
     #number_of_points = 5
@@ -83,7 +83,7 @@ def single_location(years = [2014,2015,2016,2017,2018,2019,2020],
             df = pd.read_csv(filename)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
-            df = process(timestamps, repeatedColumns, HotEncodedColumns, years, date_start, date_end)
+            df = process(timestamps, repeatedColumns, HotEncodedColumns, years, date_start, date_end, rain_present)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
             print(df.columns)
             df.to_csv(filename)

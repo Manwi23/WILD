@@ -121,7 +121,7 @@ def addRainData(processed, places):
 
 def process(timestamps, repeatedColumns, HotEncodedColumns,
             years =  [2014,2015,2016,2017,2018,2019,2020], 
-            date_start="01-01", date_end='03-31', place='wroclaw',places=None):
+            date_start="01-01", date_end='03-31', rain_present=True, place='wroclaw',places=None):
     
     # Read scraped data
     print("Reading data...")
@@ -136,8 +136,9 @@ def process(timestamps, repeatedColumns, HotEncodedColumns,
     print("Applying 1 Hot Encoding...")
     df_processed = hotEncode(df_with_time_points, HotEncodedColumns)
     # Add rain Data 
-    print("Adding rain...")
-    df_processed = addRainData(df_processed, places)
+    if rain_present:
+        print("Adding rain...")
+        df_processed = addRainData(df_processed, places)
     return df_processed
 
 if __name__ == '__main__':
