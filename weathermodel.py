@@ -23,7 +23,7 @@ class Model():
     def compute_score(self, df):
         ymodel = self.predict_df(df)
         target = df["target"].to_numpy().reshape(-1, 1)
-        return calc_score(target, ymodel, target.mean())
+        return calc_score(target, ymodel, target.mean())[0]
 
     def error_histogram(self, df):
         err = self.compute_errors(df)
