@@ -270,7 +270,7 @@ def multi_location(rain=True, histograms=False, scores=False):
     return models
 
 if __name__ == '__main__':
-    multi_location()
+    multi_location(rain=False)
     #single_location()
     models = single_location(rain=False)
     ans = current_weather(models)
