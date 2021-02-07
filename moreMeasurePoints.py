@@ -312,9 +312,9 @@ if __name__ == '__main__':
     models = single_location(rain=False)
     ans = current_weather(models)
     for td in ans:
-        for m in ans:
+        for m in ans[td]:
             print(td, m)
-            print(ans[-10:])
+            print(ans[td][m][-10:])
     
 
 """
