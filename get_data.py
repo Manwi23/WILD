@@ -38,6 +38,7 @@ def scrape_date_range(name, start=date(2018, 1, 1), end=date(2018, 1, 30), chrom
 
     chrome_options = Options()  
     chrome_options.add_argument("--headless") # Opens the browser up in background
+    chrome_options.add_argument("--no-sandbox")
 
 
     for i in range(days):
