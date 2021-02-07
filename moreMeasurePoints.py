@@ -1,13 +1,11 @@
 from datetime import date, datetime, timedelta
 from os.path import exists
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.model_selection import train_test_split
-import seaborn as sns
 
 from DataProcessing import deleteUnwanted, process
 from neural_nets import NNModel, NNTest
@@ -36,10 +34,6 @@ class LinearRegressionModel(Model):
             self.model = Ridge().fit(X_train, Y_train)
         else:
             self.model = LinearRegression().fit(X_train, Y_train)
-    
-    # def compute_score(self, df):
-    #     X, Y = self.prepare_data(df)
-    #     return self.model.score(X, Y)
 
     def show_score(self):
         print(self.label + "scores:")
@@ -117,7 +111,7 @@ def XGBoostTest(train_df, test_df, histograms=True, scores=True):
 
     return model
 
-def current_weather(models):
+def current_weather(models, multiple_locations=[]):
     def get_good_date(dt):
         m = str(dt.month)
         if len(m) == 1: m = '0'+m
@@ -140,17 +134,31 @@ def current_weather(models):
                         end=date(future.year,future.month,future.day),
                         chromedriver='./chromedriver')
 
+    for m in multiple_locations:
+        if m != 'wroclaw':
+            scrape_date_range(m, start=date(past.year,past.month,past.day),
+                            end=date(future.year,future.month,future.day),
+                            chromedriver='./chromedriver')
+
     number_of_points = 3
     HotEncodedColumns = ['Wind', 'Condition']
+    if multiple_locations:
+        HotEncodedColumns = extend_column_list(HotEncodedColumns, multiple_locations[1:])
     repeatedColumns = ["Temperature",'Wind', 'Condition']
+    if multiple_locations:
+        repeatedColumns = extend_column_list(repeatedColumns, multiple_locations[1:])
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
+    # time_deltas = [4]
     dfs = {}
 
     for time_delta in time_deltas:
         timestamps = [time_delta*(i+1) for i in range(number_of_points)]
         df = process(timestamps, repeatedColumns, HotEncodedColumns,
                     [today.year], get_good_date(past), get_good_date(future), rain_present=False,
-                    current_time=0)
+                    current_time=0) if not multiple_locations else \
+                    process(timestamps, repeatedColumns, HotEncodedColumns,
+                    [today.year], get_good_date(past), get_good_date(future), rain_present=False,
+                    current_time=0, place=None, places=multiple_locations)
         df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         # print(f"\n\nDataframe {time_delta/2} columns:\n")
         # print(df.columns)
@@ -190,11 +198,13 @@ def single_location(rain=True, histograms=False, scores=False):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
         else:
+            print(f"The file {filename} doesn't exists; preprocessing data.")
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
             df = process(timestamps, repeatedColumns, HotEncodedColumns, rain_present=rain)
-            print(f"\n\nDataframe {time_delta/2} columns:\n")
-            print(df.columns)
+            # print(f"\n\nDataframe {time_delta/2} columns:\n")
+            # print(df.columns)
             df.to_csv(filename)
+            print("Got database: ", filename)
         dfs[time_delta] = df
 
     models = {}
@@ -238,19 +248,21 @@ def multi_location(rain=True, histograms=False, scores=False):
 
     dfs = {}
     rain_text = ("-norain" if not rain else "")
+
     for time_delta in time_deltas:
         filename = f"data/WeatherJoint{rain_text}-n{number_of_points}-every{str(time_delta/2)}h-measureT"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
         else:
-            print("making file:", filename)
+            print(f"The file {filename} doesn't exists; preprocessing data.")
+            # print("making file:", filename)
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
             df = process(timestamps, repeatedColumns, HotEncodedColumns, place=None, places=places)
-            print(f"\n\nDataframe {time_delta/2} columns:\n")
-            print(df.columns)
+            # print(f"\n\nDataframe {time_delta/2} columns:\n")
+            # print(df.columns)
             df.to_csv(filename)
-        print("got database", filename)
+        print("Got database: ", filename)
         dfs[time_delta] = df
         
     models = {}
@@ -270,10 +282,18 @@ def multi_location(rain=True, histograms=False, scores=False):
     return models
 
 if __name__ == '__main__':
+<<<<<<< HEAD
     multi_location(rain=False)
     #single_location()
     models = single_location(rain=False)
     ans = current_weather(models)
+=======
+    # multi_location()
+    # single_location()
+    # models = single_location(rain=False)
+    models = multi_location(rain=False)
+    ans, _ = current_weather(models, multiple_locations=["wroclaw", "poznan", "katowice", "prague", "dresden"])
+>>>>>>> e4a65fcf2129e9e3abf390176235944e1b918a82
     for td in ans:
         for m in ans[td]:
             print(td, m)
