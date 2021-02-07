@@ -6,40 +6,12 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression, Ridge
 import xgboost as xgb
 from trees import calc_score
-from neural_nets import NNTest
 from datetime import datetime
 import seaborn as sns
 import matplotlib.pyplot as plt
+from weathermodel import Model
+from neural_nets import NNModel, NNTest
 
-class Model():
-    def __init__(self, train_df, test_df, label = ""):
-        self.train_df = train_df
-        self.test_df  = test_df
-        self.label = label
-
-    def fit(self):
-        raise "Fit not implemented"
-        pass
-    
-    def predict_df(self):
-        raise "predict not implemented"
-
-    def error_histogram(self, df):
-        err = self.compute_errors(df)
-        sns.displot(err)
-        plt.show()
-        # if both:
-        #     train_err = self.compute_errors(self.train_df)
-        #     test_err = self.compute_errors(self.test_df)
-        #     train_data = np.full_like(train_err, "train", dtype=str)
-        #     errTrain = pd.DataFrame(np.column_stack((train_data,train_err)), columns=['dataset', 'err'])
-        #     #err = pd.DataFrame(np.column_stack((err_train,err_test)), columns=['train', 'test'])
-        #     sns.displot(errTrain, x = "err")
-        #     plt.show()
-        # else:
-        #     err = self.compute_errors(df)
-        #     sns.displot(err)
-        #     plt.show()
 
 class LinearRegressionModel(Model):
     def __init__(self, train_df, test_df, label = ""):
@@ -79,10 +51,6 @@ class LinearRegressionModel(Model):
         X, _ = self.prepare_data(df)
         return self.predict(X)
     
-    def compute_errors(self, df):
-        X, trueY = self.prepare_data(df)
-        modelY = self.predict(X)
-        return modelY-trueY
 
 
 class XGBoostModel(Model):
@@ -104,18 +72,11 @@ class XGBoostModel(Model):
                 matrix, early_stopping_rounds=10, 
                 evals=[(matrix, "target_train"), (matrix_val, "target_val")],
                 verbose_eval=False)
-    
-    def compute_score(self, df):
-        X_df, target, matrix = self.prepare_data(df)
-        m = xgb.DMatrix(X_df)
-        ytarget = self.model.predict(m)
-        mm = target.mean()
-        return calc_score(target, ytarget, mm)
 
     def show_score(self):
         print(self.label + " Scores:")
         print("Train score:", self.compute_score(self.train_df))
-        print("Val score:", self.compute_score(self.test_df))
+        print("Val score:", self.compute_score(self.val_df))
         print("Test score:", self.compute_score(self.test_df))
 
     def predict_df(self, df):
@@ -125,12 +86,8 @@ class XGBoostModel(Model):
 
     def predict(self, X_df):
         m = xgb.DMatrix(X_df)
-        return self.model.predict(m)
+        return self.model.predict(m).reshape(-1,1)
     
-    def compute_errors(self, df):
-        X_df, target, matrix = self.prepare_data(df)
-        modelY = self.predict(X_df)
-        return modelY-target
 
 def LinearRegressionTest(train_df, test_df):
 
@@ -178,7 +135,7 @@ def single_location():
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
         LinearRegressionTest(train_df, test_df)
         XGBoostTest(train_df, test_df)
-        #NNTest(train_df, test_df)
+        NNTest(train_df, test_df)
 
 def extend_column_list(cols, suffixes):
     new_cols = []
@@ -197,7 +154,7 @@ def multi_location():
     repeatedColumns = ["Temperature",'Wind', 'Condition']
     #repeatedColumns = ["Temperature",'Wind']
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
-    time_deltas = [4]
+    # time_deltas = [4]
     places = ["wroclaw", "poznan", "katowice", "prague", "dresden"]
     #places = ["wroclaw"]
     HotEncodedColumns = extend_column_list(HotEncodedColumns, places[1:])
@@ -210,15 +167,6 @@ def multi_location():
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
-            # def make_float(v):
-            #     try:
-            #         return float(v)
-            #     except:
-            #         print(v)
-            #         return 0
-            # # print(df[df["Precip._dresden"] == "Cloudy"])
-
-            # df["Precip._dresden"] = df["Precip._dresden"].apply(make_float)
         else:
             print("making file:", filename)
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
@@ -236,7 +184,7 @@ def multi_location():
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
         LinearRegressionTest(train_df, test_df)
         XGBoostTest(train_df, test_df)
-        #NNTest(train_df, test_df)
+        NNTest(train_df, test_df)
 
 if __name__ == '__main__':
     multi_location()
