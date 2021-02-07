@@ -1,16 +1,19 @@
-from DataProcessing import process, deleteUnwanted
+from datetime import date, datetime, timedelta
 from os.path import exists
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression, Ridge
 import xgboost as xgb
-from trees import calc_score
-from datetime import datetime
+from sklearn.linear_model import LinearRegression, Ridge
+from sklearn.model_selection import train_test_split
 import seaborn as sns
-import matplotlib.pyplot as plt
-from weathermodel import Model
+
+from DataProcessing import deleteUnwanted, process
 from neural_nets import NNModel, NNTest
+from trees import calc_score
+from weathermodel import Model
+from get_data import scrape_date_range
 
 
 class LinearRegressionModel(Model):
@@ -112,6 +115,65 @@ def XGBoostTest(train_df, test_df, histograms=True):
 
     return model
 
+def current_weather(models):
+    def get_good_date(dt):
+        m = str(dt.month)
+        if len(m) == 1: m = '0'+m
+        d = str(dt.day)
+        if len(d) == 1: d = '0'+d
+        return m + '-' + d
+
+    def fill_columns(train, test):
+        d = pd.DataFrame(0, index=np.arange(len(test)), columns=train.columns)
+        for col in test.columns:
+            if col in train.columns:
+                d[col] = test[col]
+        return d
+
+    today = date.today()
+    past = today - timedelta(days=5)
+    future = today + timedelta(days=1)
+
+    scrape_date_range('wroclaw', start=date(past.year,past.month,past.day),
+                        end=date(future.year,future.month,future.day),
+                        chromedriver='./chromedriver')
+
+    number_of_points = 3
+    HotEncodedColumns = ['Wind', 'Condition']
+    repeatedColumns = ["Temperature",'Wind', 'Condition']
+    time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
+    dfs = {}
+
+    for time_delta in time_deltas:
+        timestamps = [time_delta*(i+1) for i in range(number_of_points)]
+        df = process(timestamps, repeatedColumns, HotEncodedColumns,
+                    [today.year], get_good_date(past), get_good_date(future), rain_present=False,
+                    current_time=0)
+        df = deleteUnwanted(df, ['Date', 'index', 'Time'])
+        print(f"\n\nDataframe {time_delta/2} columns:\n")
+        print(df.columns)
+        dfs[time_delta] = df
+
+    all_predictions = {}
+    
+    for time_delta in time_deltas:
+        models_for_timedelta = models[time_delta]
+        data = dfs[time_delta]
+        all_predictions[time_delta] = {}
+        for m in models_for_timedelta:
+            print(m)
+            model = models_for_timedelta[m]
+            new_test = fill_columns(model.train_df, data)
+            result = model.predict_df(new_test).reshape(-1)
+            measurements = dfs[24]['TemperaturePrev12h']
+            predicted = []
+            for (res, mes) in zip(result, measurements):
+                predicted += [res + mes]
+            all_predictions[time_delta][m] = predicted
+
+    return all_predictions
+
+    
 def single_location_colab_version(years = [2014,2015,2016,2017,2018,2019,2020], 
                                     date_start="01-01", date_end='03-31', rain_present=True,
                                     colab_presentation = False, last_part = [], only_prepare=False):
