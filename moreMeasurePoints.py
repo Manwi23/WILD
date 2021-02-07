@@ -282,18 +282,11 @@ def multi_location(rain=True, histograms=False, scores=False):
     return models
 
 if __name__ == '__main__':
-<<<<<<< HEAD
-    multi_location(rain=False)
-    #single_location()
-    models = single_location(rain=False)
-    ans = current_weather(models)
-=======
     # multi_location()
     # single_location()
     # models = single_location(rain=False)
     models = multi_location(rain=False)
     ans, _ = current_weather(models, multiple_locations=["wroclaw", "poznan", "katowice", "prague", "dresden"])
->>>>>>> e4a65fcf2129e9e3abf390176235944e1b918a82
     for td in ans:
         for m in ans[td]:
             print(td, m)
