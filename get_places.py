@@ -27,6 +27,7 @@ def get_city_address(city_name, headless=True, wait_for_page=0, chromedriver='./
     if headless:
         chrome_options.add_argument("--headless") # Opens the browser up in background
         chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument('--disable-dev-shm-usage')
 
     with webdriver.Chrome(chromedriver, options=chrome_options) as browser:
         browser.get(base)
