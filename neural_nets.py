@@ -8,12 +8,101 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from trees import calc_score
-
+from weathermodel import Model
 from copy import deepcopy
 
 
-def NNTest(train_df, test_df):
-    torch.set_num_threads(8)
+class NNModel(Model):
+    def __init__(self, train_df, test_df, label = ""):
+        super().__init__(train_df, test_df, label)
+        self.label = "NeuralNet " + self.label
+        self.train_df, self.val_df = train_test_split(self.train_df, test_size = 0.16666666666, shuffle=False)
+        
+    def prepare_data(self, df):
+        target = df['target']
+        X_df = df.drop(columns=['target'])
+        X = torch.tensor(X_df.to_numpy(), dtype=torch.float32)
+        Y = torch.tensor(target.to_numpy(), dtype=torch.float32).unsqueeze(-1)
+        return X, Y, target.to_numpy()
+
+    def predict_df(self, df):
+        with torch.no_grad():
+            train_X, _, _ = self.prepare_data(df)
+            return self.model(train_X).numpy()
+
+    def show_score(self):
+        print(self.label + " Scores:")
+        print("Train score:", self.compute_score(self.train_df))
+        print("Val score:", self.compute_score(self.val_df))
+        print("Test score:", self.compute_score(self.test_df))
+
+    def fit(self):
+        torch.set_num_threads(8)
+        in_size = len(self.train_df.columns) - 1
+        hidden1_size = 80
+        hidden2_size = 40
+        out_size = 1
+
+        model = nn.Sequential(
+            nn.Linear(in_size, hidden1_size), nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(hidden1_size, hidden2_size), nn.ReLU(),
+            nn.Dropout(),
+            nn.Linear(hidden2_size, out_size))
+
+        opt = Adam(model.parameters())
+        opt.zero_grad()
+
+        train_X, train_Y, _ = self.prepare_data(self.train_df)
+        val_X, _, val_Y = self.prepare_data(self.val_df)
+        best = deepcopy(model)
+        best_val = 0
+        iter_without_progress = 40
+        no_progress = 0
+
+        for i in range(100000):
+            model.train()
+            results = model(train_X)
+            d = results - train_Y
+            loss = (d*d).sum() / train_X.shape[0]
+
+            # print(loss.item())
+            loss.backward()
+            opt.step()
+            opt.zero_grad()
+            
+            with torch.no_grad():
+                model.eval()
+                val_res = model(val_X).numpy()
+                score = calc_score(val_Y, val_res, val_Y.mean())
+                if score > best_val:
+                    best_val = score
+                    best = deepcopy(model)
+                    no_progress = 0
+                    # print(score)
+                else:
+                    no_progress += 1
+                
+            if iter_without_progress <= no_progress:
+                break
+
+        self.model = best
+
+
+def NNTest(train_df, test_df, histograms=True):
+
+    model = NNModel(train_df, test_df)
+    model.fit()
+    model.show_score()
+    if histograms:
+        model.error_histogram(model.train_df)
+        model.error_histogram(model.val_df)
+        model.error_histogram(model.test_df)
+
+    return model
+
+def NNTest2(train_df, test_df):
+    
     train_df, val_df = train_test_split(train_df, test_size = 0.16666666666, shuffle=False)
 
     target_train = train_df['target']
@@ -25,22 +114,6 @@ def NNTest(train_df, test_df):
 
     # print(train_df.columns)
     # print(len(train_df.columns))
-
-    in_size = len(train_df.columns)
-    print(in_size)
-    hidden1_size = 80
-    hidden2_size = 40
-    out_size = 1
-
-    model = nn.Sequential(
-        nn.Linear(in_size, hidden1_size), nn.ReLU(),
-        nn.Dropout(),
-        nn.Linear(hidden1_size, hidden2_size), nn.ReLU(),
-        nn.Dropout(),
-        nn.Linear(hidden2_size, out_size))
-    
-    opt = Adam(model.parameters())
-    opt.zero_grad()
 
     train_X = torch.tensor(train_df.to_numpy(), dtype=torch.float32)
     train_Y = torch.tensor(target_train.to_numpy(), dtype=torch.float32).unsqueeze(-1)

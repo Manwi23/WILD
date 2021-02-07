@@ -3,71 +3,116 @@ from os.path import exists
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge
 import xgboost as xgb
 from trees import calc_score
-from neural_nets import NNTest
 from datetime import datetime
+import seaborn as sns
+import matplotlib.pyplot as plt
+from weathermodel import Model
+from neural_nets import NNModel, NNTest
 
-def LinearRegressionTest(train_df, test_df):
 
-    features = list(train_df.columns)
-    features.remove('target')
+class LinearRegressionModel(Model):
+    def __init__(self, train_df, test_df, label = ""):
+        super().__init__(train_df, test_df, label)
+        self.label = "LinearReg " + self.label
+        # prepare data for fitting:
+        self.features = list(self.train_df.columns)
+        self.features.remove('target')
 
-    Y_train = np.array(train_df['target'])
-    Y_train = Y_train.reshape(-1, 1)
-    X_train = np.array(train_df[features])
+    def prepare_data(self, df):
+        Y = np.array(df['target'])
+        Y = Y.reshape(-1, 1)
+        X = np.array(df[self.features])
+        return X, Y
 
-    X_test = np.array(test_df[features])
-    Y_test = np.array(test_df['target'])
-    Y_test = Y_test.reshape(-1, 1)
-
-    reg = LinearRegression().fit(X_train, Y_train)
-    print("=====Linear Regression=====")
-    #print("features:", features)
-    print("Train reg.score:", reg.score(X_train, Y_train))
-    print("Test reg.score:", reg.score(X_test, Y_test))
-
-# based on Kasia's code
-def XGBoostTest(train_df, test_df):
-    train_df, val_df = train_test_split(train_df, test_size = 0.16666666666, shuffle=False)
-
-    print("=====XGBoost=====")
+    def fit(self, ridge = True):
+        X_train, Y_train = self.prepare_data(self.train_df)
+        if ridge:
+            self.model = Ridge().fit(X_train, Y_train)
+        else:
+            self.model = LinearRegression().fit(X_train, Y_train)
     
-    target_train = train_df['target']
-    train_df = train_df.drop(columns=['target'])
-    target_val = val_df['target']
-    val_df = val_df.drop(columns=['target'])
-    target_test = test_df['target']
-    test_df = test_df.drop(columns=['target'])
+    def compute_score(self, df):
+        X, Y = self.prepare_data(df)
+        return self.model.score(X, Y)
 
-    matrix = xgb.DMatrix(train_df, target_train)
-    matrix_val = xgb.DMatrix(val_df, target_val)
+    def show_score(self):
+        print(self.label + " Scores:")
+        print("Train reg.score:", self.compute_score(self.train_df))
+        print("Test reg.score:", self.compute_score(self.test_df))
 
-    xgb_model = xgb.train({'booster':"gbtree",'objective':"reg:squarederror"}, 
+    def predict(self, X):
+        #X, _ = self.prepare_data(df)
+        return self.model.predict(X)
+    
+    def predict_df(self, df):
+        X, _ = self.prepare_data(df)
+        return self.predict(X)
+    
+
+
+class XGBoostModel(Model):
+    def __init__(self, train_df, test_df, label = ""):
+        super().__init__(train_df, test_df, label)
+        self.label = "XGBoost " + self.label
+        self.train_df, self.val_df = train_test_split(self.train_df, test_size = 0.16666666666, shuffle=False)
+        
+    def prepare_data(self, df):
+        target = df['target']
+        X_df = df.drop(columns=['target'])
+        matrix = xgb.DMatrix(X_df, target)
+        return X_df, target, matrix
+
+    def fit(self):
+        _, _, matrix = self.prepare_data(self.train_df)
+        _, _, matrix_val = self.prepare_data(self.val_df)
+        self.model = xgb.train({'booster':"gbtree",'objective':"reg:squarederror"}, 
                 matrix, early_stopping_rounds=10, 
                 evals=[(matrix, "target_train"), (matrix_val, "target_val")],
                 verbose_eval=False)
 
-    m_train = xgb.DMatrix(train_df)
-    ytarget = xgb_model.predict(m_train)
-    mm = target_train.mean()
-    print("Train score:", calc_score(target_train, ytarget, mm))
+    def show_score(self):
+        print(self.label + " Scores:")
+        print("Train score:", self.compute_score(self.train_df))
+        print("Val score:", self.compute_score(self.val_df))
+        print("Test score:", self.compute_score(self.test_df))
 
-    m_val = xgb.DMatrix(val_df)
-    ytarget = xgb_model.predict(m_val)
-    mm = target_val.mean()
-    print("Val score:", calc_score(target_val, ytarget, mm))
+    def predict_df(self, df):
+        #X, _ = self.prepare_data(df)
+        X_df, _, _ = self.prepare_data(df)
+        return self.predict(X_df)
 
-    m_test = xgb.DMatrix(test_df)
-    ytarget = xgb_model.predict(m_test)
-    mm = target_test.mean()
-    print("Test score:", calc_score(target_test, ytarget, mm))
+    def predict(self, X_df):
+        m = xgb.DMatrix(X_df)
+        return self.model.predict(m).reshape(-1,1)
+    
 
+def LinearRegressionTest(train_df, test_df, histograms=True):
 
-def single_location_colab_version(years = [2014,2015,2016,2017,2018,2019,2020], 
-                                    date_start="01-01", date_end='03-31', rain_present=True,
-                                    colab_presentation = False, last_part = [], only_prepare=False):
+    model = LinearRegressionModel(train_df, test_df)
+    model.fit() # model.fit(ridge=False) 
+    model.show_score()
+    if histograms:
+        model.error_histogram(model.train_df)
+        model.error_histogram(model.test_df)
+
+    return model
+
+def XGBoostTest(train_df, test_df, histograms=True):
+
+    model = XGBoostModel(train_df, test_df)
+    model.fit()
+    model.show_score()
+    if histograms:
+        model.error_histogram(model.train_df)
+        model.error_histogram(model.val_df)
+        model.error_histogram(model.test_df)
+
+    return model
+
+def single_location(rain=True, histograms=False):
 
     number_of_points = 3
     #number_of_points = 5
@@ -75,35 +120,34 @@ def single_location_colab_version(years = [2014,2015,2016,2017,2018,2019,2020],
     repeatedColumns = ["Temperature",'Wind', 'Condition']
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
     dfs = {}
-
+    rain_text = ("-norain" if not rain else "")
     for time_delta in time_deltas:
-        filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT" if not colab_presentation else \
-                    f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT-predicting-now-test"
+        filename = f"data/Weather{rain_text}-n{number_of_points}-every{str(time_delta/2)}h-measureT"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
-            if colab_presentation:
-                df = process(timestamps, repeatedColumns, HotEncodedColumns,
-                                years, date_start, date_end, rain_present,
-                                last_different=True, last_one=last_part, current_time=0)
-            else: 
-                df = process(timestamps, repeatedColumns, HotEncodedColumns, years, date_start, date_end, rain_present)
+            df = process(timestamps, repeatedColumns, HotEncodedColumns, rain_present=rain)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
             print(df.columns)
             df.to_csv(filename)
         dfs[time_delta] = df
-        
-    if not only_prepare:
-        for time_delta, df in dfs.items():
-            print("\n-------------------------------------------------------------")
-            print(f"Results for dataframe with measurements every {time_delta/2}h\n")
-            df = deleteUnwanted(df, ['Date', 'index', 'Time'])
-            train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
-            LinearRegressionTest(train_df, test_df)
-            XGBoostTest(train_df, test_df)
-            NNTest(train_df, test_df)
+
+    models = {}
+
+    for time_delta, df in dfs.items():
+        print("\n-------------------------------------------------------------")
+        print(f"Results for dataframe with measurements every {time_delta/2}h\n")
+        df = deleteUnwanted(df, ['Date', 'index', 'Time'])
+        train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
+        models[time_delta] = {
+            "linear":LinearRegressionTest(train_df, test_df, histograms=False),
+            "xgboost":XGBoostTest(train_df, test_df, histograms=False),
+            "neuralnet":NNTest(train_df, test_df, histograms=False)
+        }
+    
+    return models
 
 def extend_column_list(cols, suffixes):
     new_cols = []
@@ -115,51 +159,54 @@ def extend_column_list(cols, suffixes):
     return new_cols
 
 
-def multi_location():
+def multi_location(rain=True, histograms=False):
     number_of_points = 3
     #number_of_points = 5
     HotEncodedColumns = ['Wind', 'Condition']
     repeatedColumns = ["Temperature",'Wind', 'Condition']
+    #repeatedColumns = ["Temperature",'Wind']
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
+    # time_deltas = [4]
     places = ["wroclaw", "poznan", "katowice", "prague", "dresden"]
+    #places = ["wroclaw"]
     HotEncodedColumns = extend_column_list(HotEncodedColumns, places[1:])
     repeatedColumns = extend_column_list(repeatedColumns, places[1:])
 
     dfs = {}
-
+    rain_text = ("-norain" if not rain else "")
     for time_delta in time_deltas:
-        filename = f"data/WeatherJoint-n{number_of_points}-every{str(time_delta/2)}h-measureT"
+        filename = f"data/WeatherJoint{rain_text}-n{number_of_points}-every{str(time_delta/2)}h-measureT"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
-            # def make_float(v):
-            #     try:
-            #         return float(v)
-            #     except:
-            #         print(v)
-            #         return 0
-            # # print(df[df["Precip._dresden"] == "Cloudy"])
-
-            # df["Precip._dresden"] = df["Precip._dresden"].apply(make_float)
         else:
+            print("making file:", filename)
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
             df = process(timestamps, repeatedColumns, HotEncodedColumns, place=None, places=places)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
             print(df.columns)
             df.to_csv(filename)
+        print("got database", filename)
         dfs[time_delta] = df
         
+    models = {}
+
     for time_delta, df in dfs.items():
         print("\n-------------------------------------------------------------")
         print(f"Results for dataframe with measurements every {time_delta/2}h\n")
         df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
-        LinearRegressionTest(train_df, test_df)
-        XGBoostTest(train_df, test_df)
-        NNTest(train_df, test_df)
+        models[time_delta] = {
+            "linear":LinearRegressionTest(train_df, test_df, histograms),
+            "xgboost":XGBoostTest(train_df, test_df, histograms),
+            "neuralnet":NNTest(train_df, test_df, histograms)
+        }
+    
+    return models
 
 if __name__ == '__main__':
     multi_location()
+    #single_location()
     
 
 """
