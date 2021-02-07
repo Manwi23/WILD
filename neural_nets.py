@@ -89,14 +89,17 @@ class NNModel(Model):
         self.model = best
 
 
-def NNTest(train_df, test_df):
+def NNTest(train_df, test_df, histograms=True):
 
     model = NNModel(train_df, test_df)
     model.fit()
     model.show_score()
-    model.error_histogram(model.train_df)
-    model.error_histogram(model.val_df)
-    model.error_histogram(model.test_df)
+    if histograms:
+        model.error_histogram(model.train_df)
+        model.error_histogram(model.val_df)
+        model.error_histogram(model.test_df)
+
+    return model
 
 def NNTest2(train_df, test_df):
     

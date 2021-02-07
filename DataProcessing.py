@@ -11,17 +11,19 @@ def deleteUnwanted(df, toDrop=[]):
         df = df.drop(columns=[""])
     return df
 
-def readData(years, date_start, date_end, place):
+def readData(years, date_start, date_end, place, last_different=False, last_one=[]):
     dfs = []
     for y in years:
         dfs.append(process_df(pd.read_csv(f"scraped/{place}{y}-{date_start}{y}-{date_end}.csv"), str(y)))
+    if last_different:
+        y, ds, de = last_one
+        dfs.append(process_df(pd.read_csv(f"scraped/{place}{y}-{ds}{y}-{de}.csv"), str(y)))
     return dfs
 
 def readDataAndJoin(years, date_start, date_end, places):
     dfs = []
     for y in years:
         df = None
-        prev_p = ""
         for p in places:
             v = process_df(pd.read_csv(f"scraped/{p}{y}-{date_start}{y}-{date_end}.csv"), str(y))
             if df is None:
@@ -98,7 +100,7 @@ def addRainData(processed, places):
 
         for _, row in df.iterrows():
             day = date(int(row["YEAR"]), int(row["MO"]), int(row["DY"]))
-            prev_day = day #+ timedelta(days = -1)
+            prev_day = day + timedelta(days = -1)
             precip_dict[str(prev_day)] = row["Precipitation"]
 
         useful = []
@@ -121,23 +123,28 @@ def addRainData(processed, places):
 
 def process(timestamps, repeatedColumns, HotEncodedColumns,
             years =  [2014,2015,2016,2017,2018,2019,2020], 
-            date_start="01-01", date_end='03-31', place='wroclaw',places=None):
+            date_start="01-01", date_end='03-31', rain_present=True,
+            place='wroclaw',places=None, last_different=False, last_one=[],
+            current_time = 24):
     
     # Read scraped data
     print("Reading data...")
     if place is not None:
-        dfs = readData(years = years, date_start=date_start, date_end=date_end, place=place)
+        dfs = readData(years = years, date_start=date_start,
+                        date_end=date_end, place=place, last_different=last_different,
+                        last_one=last_one)
     elif places is not None:
         dfs = readDataAndJoin(years = years, date_start=date_start, date_end=date_end, places=places)
     # Add previous points in time and target
     print("Adding previous measurements...")
-    df_with_time_points = addTimePoints(dfs, timestamps, repeatedColumns)
+    df_with_time_points = addTimePoints(dfs, timestamps, repeatedColumns, current_time=current_time)
     # Apply 1 hot encoding 
     print("Applying 1 Hot Encoding...")
     df_processed = hotEncode(df_with_time_points, HotEncodedColumns)
     # Add rain Data 
-    print("Adding rain...")
-    df_processed = addRainData(df_processed, places)
+    if rain_present:
+        print("Adding rain...")
+        df_processed = addRainData(df_processed, places)
     return df_processed
 
 if __name__ == '__main__':

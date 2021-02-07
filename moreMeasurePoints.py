@@ -89,24 +89,30 @@ class XGBoostModel(Model):
         return self.model.predict(m).reshape(-1,1)
     
 
-def LinearRegressionTest(train_df, test_df):
+def LinearRegressionTest(train_df, test_df, histograms=True):
 
     model = LinearRegressionModel(train_df, test_df)
     model.fit() # model.fit(ridge=False) 
     model.show_score()
-    model.error_histogram(model.train_df)
-    model.error_histogram(model.test_df)
+    if histograms:
+        model.error_histogram(model.train_df)
+        model.error_histogram(model.test_df)
 
-def XGBoostTest(train_df, test_df):
+    return model
+
+def XGBoostTest(train_df, test_df, histograms=True):
 
     model = XGBoostModel(train_df, test_df)
     model.fit()
     model.show_score()
-    model.error_histogram(model.train_df)
-    model.error_histogram(model.val_df)
-    model.error_histogram(model.test_df)
+    if histograms:
+        model.error_histogram(model.train_df)
+        model.error_histogram(model.val_df)
+        model.error_histogram(model.test_df)
 
-def single_location():
+    return model
+
+def single_location(rain=True, histograms=False):
 
     number_of_points = 3
     #number_of_points = 5
@@ -114,28 +120,34 @@ def single_location():
     repeatedColumns = ["Temperature",'Wind', 'Condition']
     time_deltas = [4, 8, 12, 24, 48] # 2h, 4h, 6h, 12h, 24h
     dfs = {}
-
+    rain_text = ("-norain" if not rain else "")
     for time_delta in time_deltas:
-        filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT"
+        filename = f"data/Weather{rain_text}-n{number_of_points}-every{str(time_delta/2)}h-measureT"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
         else:
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
-            df = process(timestamps, repeatedColumns, HotEncodedColumns)
+            df = process(timestamps, repeatedColumns, HotEncodedColumns, rain_present=rain)
             print(f"\n\nDataframe {time_delta/2} columns:\n")
             print(df.columns)
             df.to_csv(filename)
         dfs[time_delta] = df
-        
+
+    models = {}
+
     for time_delta, df in dfs.items():
         print("\n-------------------------------------------------------------")
         print(f"Results for dataframe with measurements every {time_delta/2}h\n")
         df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
-        LinearRegressionTest(train_df, test_df)
-        XGBoostTest(train_df, test_df)
-        NNTest(train_df, test_df)
+        models[time_delta] = {
+            "linear":LinearRegressionTest(train_df, test_df, histograms=False),
+            "xgboost":XGBoostTest(train_df, test_df, histograms=False),
+            "neuralnet":NNTest(train_df, test_df, histograms=False)
+        }
+    
+    return models
 
 def extend_column_list(cols, suffixes):
     new_cols = []
@@ -147,7 +159,7 @@ def extend_column_list(cols, suffixes):
     return new_cols
 
 
-def multi_location():
+def multi_location(rain=True, histograms=False):
     number_of_points = 3
     #number_of_points = 5
     HotEncodedColumns = ['Wind', 'Condition']
@@ -161,9 +173,9 @@ def multi_location():
     repeatedColumns = extend_column_list(repeatedColumns, places[1:])
 
     dfs = {}
-
+    rain_text = ("-norain" if not rain else "")
     for time_delta in time_deltas:
-        filename = f"data/WeatherJoint-n{number_of_points}-every{str(time_delta/2)}h-measureT"
+        filename = f"data/WeatherJoint{rain_text}-n{number_of_points}-every{str(time_delta/2)}h-measureT"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
@@ -177,14 +189,20 @@ def multi_location():
         print("got database", filename)
         dfs[time_delta] = df
         
+    models = {}
+
     for time_delta, df in dfs.items():
         print("\n-------------------------------------------------------------")
         print(f"Results for dataframe with measurements every {time_delta/2}h\n")
         df = deleteUnwanted(df, ['Date', 'index', 'Time'])
         train_df, test_df = train_test_split(df, test_size = 0.14285714285, shuffle=False)
-        LinearRegressionTest(train_df, test_df)
-        XGBoostTest(train_df, test_df)
-        NNTest(train_df, test_df)
+        models[time_delta] = {
+            "linear":LinearRegressionTest(train_df, test_df, histograms),
+            "xgboost":XGBoostTest(train_df, test_df, histograms),
+            "neuralnet":NNTest(train_df, test_df, histograms)
+        }
+    
+    return models
 
 if __name__ == '__main__':
     multi_location()
