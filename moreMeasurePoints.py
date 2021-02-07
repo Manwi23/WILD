@@ -75,7 +75,8 @@ def single_location():
     dfs = {}
 
     for time_delta in time_deltas:
-        filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT"
+        # filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT"
+        filename = f"data/Weather-n{number_of_points}-every{str(time_delta/2)}h-measureT-predicting-now"
         if exists(filename):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
