@@ -190,11 +190,13 @@ def single_location(rain=True, histograms=False, scores=False):
             print(f"The file {filename} already exists; reading database from file.")
             df = pd.read_csv(filename)
         else:
+            print(f"The file {filename} doesn't exists; preprocessing data.")
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
             df = process(timestamps, repeatedColumns, HotEncodedColumns, rain_present=rain)
-            print(f"\n\nDataframe {time_delta/2} columns:\n")
-            print(df.columns)
+            # print(f"\n\nDataframe {time_delta/2} columns:\n")
+            # print(df.columns)
             df.to_csv(filename)
+            print("Got database: ", filename)
         dfs[time_delta] = df
 
     models = {}
@@ -247,10 +249,11 @@ def multi_location(rain=True, histograms=False, scores=False):
             print("making file:", filename)
             timestamps = [time_delta*(i+1) for i in range(number_of_points)]
             df = process(timestamps, repeatedColumns, HotEncodedColumns, place=None, places=places)
-            print(f"\n\nDataframe {time_delta/2} columns:\n")
-            print(df.columns)
+            print(f"The file {filename} doesn't exists; preprocessing data.")
+            # print(f"\n\nDataframe {time_delta/2} columns:\n")
+            # print(df.columns)
             df.to_csv(filename)
-        print("got database", filename)
+        print("Got database: ", filename)
         dfs[time_delta] = df
         
     models = {}

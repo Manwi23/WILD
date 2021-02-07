@@ -125,10 +125,10 @@ def process(timestamps, repeatedColumns, HotEncodedColumns,
             years =  [2014,2015,2016,2017,2018,2019,2020], 
             date_start="01-01", date_end='03-31', rain_present=True,
             place='wroclaw',places=None, last_different=False, last_one=[],
-            current_time = 24):
+            current_time = 24, debug = False):
     
     # Read scraped data
-    print("Reading data...")
+    if debug: print("Reading data...")
     if place is not None:
         dfs = readData(years = years, date_start=date_start,
                         date_end=date_end, place=place, last_different=last_different,
@@ -136,14 +136,14 @@ def process(timestamps, repeatedColumns, HotEncodedColumns,
     elif places is not None:
         dfs = readDataAndJoin(years = years, date_start=date_start, date_end=date_end, places=places)
     # Add previous points in time and target
-    print("Adding previous measurements...")
+    if debug: print("Adding previous measurements...")
     df_with_time_points = addTimePoints(dfs, timestamps, repeatedColumns, current_time=current_time)
     # Apply 1 hot encoding 
-    print("Applying 1 Hot Encoding...")
+    if debug: print("Applying 1 Hot Encoding...")
     df_processed = hotEncode(df_with_time_points, HotEncodedColumns)
     # Add rain Data 
     if rain_present:
-        print("Adding rain...")
+        if debug: print("Adding rain...")
         df_processed = addRainData(df_processed, places)
     return df_processed
 
