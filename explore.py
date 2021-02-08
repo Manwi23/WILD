@@ -73,6 +73,47 @@ def read_or_process_data():
         result_df.to_csv("processed.csv")
     return result_df
 
+
+def collect_statistics():
+    result_df = read_or_process_data()
+    result_df, test_df = train_test_split(result_df, test_size = 0.14285714285, shuffle=False)
+
+    def low(data, confidence=0.95):
+        a = 1.0 * np.array(data)
+        n = len(a)
+        m, se = np.mean(a), scipy.stats.sem(a)
+        h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+        return m-h
+
+    def high(data, confidence=0.95):
+        a = 1.0 * np.array(data)
+        n = len(a)
+        m, se = np.mean(a), scipy.stats.sem(a)
+        h = se * scipy.stats.t.ppf((1 + confidence) / 2., n-1)
+        return m+h
+
+    names = ["mean", "95%% low", "95%% high", "values count"]
+
+    def calculate_stats(column):
+        gb = result_df.groupby(column)["target"]
+        val = pd.concat([gb.mean().rename("mean"),
+                        gb.apply(low).rename("95% low"),
+                        gb.apply(high).rename("95% high"), 
+                        gb.count().rename("count")], axis=1).sort_values("count",ascending=False)
+        
+        print(val)
+        return val
+
+
+
+    print(result_df.head())
+    wind = calculate_stats("Wind")
+    cond = calculate_stats("Condition")
+    time = calculate_stats("Time")
+
+    return wind, cond, time
+
+
 if __name__ == "__main__":
     result_df = read_or_process_data()
     result_df, test_df = train_test_split(result_df, test_size = 0.14285714285, shuffle=False)
